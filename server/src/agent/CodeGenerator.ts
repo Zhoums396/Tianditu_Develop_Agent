@@ -1132,6 +1132,7 @@ export class CodeGenerator {
 8.3 禁止生成 mapbox://、自造 style URL，或任何未经当前 reference 明确验证的 style 配置
 8.4 如果使用 \`['geometry-type']\` 过滤 GeoJSON 几何类型，统一使用单类型名：\`'Point' | 'LineString' | 'Polygon'\`；不要写 \`MultiPoint\` / \`MultiLineString\` / \`MultiPolygon\`
 8.5 如果运行时文件契约或自动数据理解已经明确数据源全是 \`Polygon/MultiPolygon\`，优先直接不写几何类型 \`filter\`；若必须写，使用 \`['==', ['geometry-type'], 'Polygon']\`
+8.6 根据名称/ID 列表高亮 GeoJSON 要素时，禁止在图层 filter 中写 \`['in', ['get', 'name'], 'literal', list]\`、\`['in', ['get', 'name'], ['literal', list]]\` 或直接引用 JS 数组变量；当前天地图 SDK 容易报 \`Expected 2 arguments, but found 3\`。必须先遍历 features 写入布尔字段，例如 \`feature.properties.__highlight = list.indexOf(feature.properties.name) !== -1\`，再使用 \`filter: ['==', ['get', '__highlight'], true]\`；反选使用 \`['!=', ['get', '__highlight'], true]\`，或拆成两个 FeatureCollection source
 9. 地图实例变量统一使用 \`var map\`，禁止在同一 HTML 中重复 \`let/const map\` 声明（避免 "Identifier 'map' has already been declared"）
 10. 默认不要添加 \`symbol + text-field\` 的常驻文字标注图层（容易触发字体 pbf 请求告警）；优先用侧边栏/弹窗展示文字信息。仅当用户明确要求“地图上常驻文字标注”时才添加文本图层
 10.1 如果确实需要 \`symbol + text-field\` 文本图层，必须显式设置 \`'text-font': ['WenQuanYi Micro Hei Mono']\`，不要依赖默认字体栈；默认字体栈可能请求 \`Open Sans Regular,Arial Unicode MS Regular\` 并触发字体 pbf 404
@@ -1229,6 +1230,7 @@ ${params.skillCatalog ? '## 可用文档目录\n' + params.skillCatalog : ''}
 8. 如果错误包含 "AJAXError: Not Found (404): default"、"Failed to parse URL from black" 或 "Failed to parse URL from blue"，优先检查是否把 v5 个性化底图字段 \`styleId\` 误写成了 \`style\`；应改为 \`styleId: 'black' | 'blue' | 'normal'\`，默认底图也可直接省略 \`styleId\`
 8.1 如果 GeoJSON source 已成功加载、图层也创建成功，但面/线/点完全不显示，优先检查 \`['geometry-type']\` 过滤条件是否误写成 \`MultiPolygon\` / \`MultiLineString\` / \`MultiPoint\`；当前运行环境应改用 \`Polygon\` / \`LineString\` / \`Point\`
 8.1.1 如果点专题图 / 热力图 / 聚合图的原始数据里出现 \`MultiPoint\`，不要直接把 \`MultiPoint\` 原样传给 \`cluster\` / \`heatmap\` / \`circle\` 图层；修复时应先归一化成 \`Point FeatureCollection\`
+8.1.2 如果错误包含 \`Expected 2 arguments, but found 3\`，优先检查图层 filter 是否写了 \`['in', ['get', field], 'literal', list]\` 或 \`['in', ['get', field], ['literal', list]]\`。修复时不要继续在 filter 中传数组变量；先给每个 feature 写入 \`properties.__highlight\` 之类的布尔字段，再用 \`['==', ['get', '__highlight'], true]\` 过滤
 8.2 如果界面一直停在“正在处理 N/M”或某个批量地理编码序列卡在第一条，优先检查是否在地图 \`load\` 完成前就启动了 geocode，并在 geocode 回调里立刻 \`addTo(map)\` / \`flyTo\` / \`fitBounds\`；修复时应把批量流程移到 \`map.on("load", ...)\` 后再启动
 9. 如果错误包含 "Identifier 'map' has already been declared"：
    - 检查是否存在重复 \`let/const map\` 声明

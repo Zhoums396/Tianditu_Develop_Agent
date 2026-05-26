@@ -10,7 +10,7 @@ bridge:
   auth:
     cookie-name: ${AUTH_COOKIE_NAME:tdt_auth}
     shared-secret: ${AUTH_SHARED_SECRET:change-this-in-production}
-    cookie-max-age-seconds: ${AUTH_COOKIE_MAX_AGE_SECONDS:7200}
+    cookie-max-age-seconds: ${AUTH_COOKIE_MAX_AGE_SECONDS:21600}
     cookie-secure: ${AUTH_COOKIE_SECURE:false}
     cookie-domain: ${AUTH_COOKIE_DOMAIN:}
     default-redirect: ${AUTH_BRIDGE_DEFAULT_REDIRECT:/workspace}
@@ -34,13 +34,14 @@ cas:
       skip-check-key: ${AUTH_BRIDGE_SKIP_CHECK_KEY:}
       encode-data: ${AUTH_BRIDGE_ENCODE_DATA:0}
       authentication-filter:
+        service: ${AUTH_BRIDGE_SERVICE_URL:}
         ignore-pattern: /sso/health
-        url-patterns: /sso/login,/sso/me
-      cas20-proxy-receiving-ticket-validation-filter:
-        url-patterns: /sso/login,/sso/me
+        url-patterns: /sso/login,/sso/me,/ai/dev/sso/login,/ai/dev/sso/me
+      cas20-proxy-receiving-ticketvalidation-filter:
+        url-patterns: /sso/login,/sso/me,/ai/dev/sso/login,/ai/dev/sso/me
         redirect-after-validation: ${AUTH_BRIDGE_REDIRECT_AFTER_VALIDATION:true}
         user-session: ${AUTH_BRIDGE_USER_SESSION:true}
       http-servlet-request-wrapper-filter:
-        url-patterns: /sso/login,/sso/me
+        url-patterns: /sso/login,/sso/me,/ai/dev/sso/login,/ai/dev/sso/me
       single-sign-out-filter:
         url-patterns: /sso/*

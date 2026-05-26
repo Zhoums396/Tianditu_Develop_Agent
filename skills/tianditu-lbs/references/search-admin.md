@@ -62,6 +62,17 @@ GET /api/tianditu/administrative
 
 ```javascript
 function buildApiUrl(path, params) {
+  if (window.__TDT_API_URL__) {
+    var proxyUrl = new URL(window.__TDT_API_URL__(path), window.location.origin);
+    Object.keys(params || {}).forEach(function (k) {
+      var v = params[k];
+      if (v !== undefined && v !== null && String(v) !== '') {
+        proxyUrl.searchParams.set(k, String(v));
+      }
+    });
+    return proxyUrl.toString();
+  }
+
   var origin = '';
   try {
     if (window.location && /^https?:/.test(window.location.origin)) {

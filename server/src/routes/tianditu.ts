@@ -1,10 +1,10 @@
-import { Router } from 'express'
+import { Router, type Request, type Response } from 'express'
 import { AdminCodebookService } from '../services/AdminCodebook.js'
 import { parseBoundaryWKT } from '../services/BoundaryParser.js'
 import { TiandituApi } from '../services/TiandituApi.js'
+import { getRequestTiandituToken } from '../utils/tiandituToken.js'
 
 const router = Router()
-const api = new TiandituApi()
 const adminCodebook = new AdminCodebookService()
 
 const DEFAULT_MAP_BOUND = '73.0,3.0,135.0,54.0'
@@ -91,9 +91,20 @@ function attachBoundaryGeoJSON(node: DistrictNode) {
     : null
 }
 
+function createRequestApi(req: Request, res: Response): TiandituApi | null {
+  const token = (req as any).tiandituTokenOverride || getRequestTiandituToken(req)
+  if (!token) {
+    res.status(400).json({ success: false, error: '请先在用户菜单中配置天地图应用密钥 tk' })
+    return null
+  }
+  return new TiandituApi(token)
+}
+
 // GET /api/tianditu/search — 地名搜索 V2（queryType 1/2/3/7/10/12/13/14）
 router.get('/search', async (req, res, next) => {
   try {
+    const api = createRequestApi(req, res)
+    if (!api) return
     const {
       keyword,
       keyWord,
@@ -191,6 +202,8 @@ router.get('/search', async (req, res, next) => {
 // GET /api/tianditu/geocode — 地理编码
 router.get('/geocode', async (req, res, next) => {
   try {
+    const api = createRequestApi(req, res)
+    if (!api) return
     const { address } = req.query
     if (!address) return res.status(400).json({ success: false, error: '缺少地址' })
     const result = await api.geocode(address as string)
@@ -203,6 +216,8 @@ router.get('/geocode', async (req, res, next) => {
 // GET /api/tianditu/reverse-geocode — 逆地理编码
 router.get('/reverse-geocode', async (req, res, next) => {
   try {
+    const api = createRequestApi(req, res)
+    if (!api) return
     const { lng, lat } = req.query
     if (!lng || !lat) return res.status(400).json({ success: false, error: '缺少坐标' })
     const result = await api.reverseGeocode(parseFloat(lng as string), parseFloat(lat as string))
@@ -215,6 +230,8 @@ router.get('/reverse-geocode', async (req, res, next) => {
 // GET /api/tianditu/drive — 驾车路线
 router.get('/drive', async (req, res, next) => {
   try {
+    const api = createRequestApi(req, res)
+    if (!api) return
     const { origLng, origLat, destLng, destLat, style } = req.query
     if (!origLng || !origLat || !destLng || !destLat) {
       return res.status(400).json({ success: false, error: '缺少起终点坐标' })
@@ -233,6 +250,8 @@ router.get('/drive', async (req, res, next) => {
 // GET /api/tianditu/transit — 公交/地铁路线
 router.get('/transit', async (req, res, next) => {
   try {
+    const api = createRequestApi(req, res)
+    if (!api) return
     const { startLng, startLat, endLng, endLat, lineType } = req.query
     if (!startLng || !startLat || !endLng || !endLat) {
       return res.status(400).json({ success: false, error: '缺少起终点坐标' })
@@ -257,6 +276,8 @@ router.get('/transit', async (req, res, next) => {
 // GET /api/tianditu/administrative — 行政区划
 router.get('/administrative', async (req, res, next) => {
   try {
+    const api = createRequestApi(req, res)
+    if (!api) return
     const keyword = pickString(req.query.keyword)
     if (!keyword) return res.status(400).json({ success: false, error: '缺少关键词 keyword' })
 

@@ -5,6 +5,7 @@ import { createLLM } from '../llm/createLLM.js'
 export interface ShareSuggestionInput {
   code: string
   hint?: string
+  tiandituToken?: string
 }
 
 export interface ShareSuggestionResult {
@@ -348,7 +349,7 @@ export class ShareSuggestionService {
     if (!code) throw new Error('分享代码不能为空')
 
     const fallback = buildFallbackShareSuggestion({ code, hint })
-    const redactedCode = redactCodeForPrompt(code, this.tiandituToken)
+    const redactedCode = redactCodeForPrompt(code, input.tiandituToken || this.tiandituToken)
     const truncatedCode = clampChars(redactedCode, MAX_CODE_CHARS)
     const signals = extractCodeSignals(redactedCode)
     const scene = detectScene(`${hint}\n${signals.pageTitle}\n${signals.headings.join(' ')}`).label

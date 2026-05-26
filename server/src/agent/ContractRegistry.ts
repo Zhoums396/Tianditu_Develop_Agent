@@ -97,7 +97,7 @@ export const CONTRACT_REGISTRY: ContractDescriptor[] = [
       '优先调用代理：GET /api/tianditu/administrative',
       '省级下钻地级市常用参数：childLevel=1&extensions=true&boundaryFormat=geojson&outputScope=children&expandChildrenBoundary=true',
       '前端渲染优先使用 boundaryGeoJSON，不要手写正则拆 WKT',
-      '运行沙箱中，代理 URL 使用 new URL("/api/tianditu/administrative", window.location.origin).toString()',
+      '运行沙箱中，代理 URL 优先使用 window.__TDT_API_URL__("/api/tianditu/administrative")；没有该 helper 时再用 new URL("/api/tianditu/administrative", window.location.origin).toString()',
     ],
     responseChecks: [
       '代理返回成功条件：res.success === true',
@@ -119,7 +119,7 @@ export const CONTRACT_REGISTRY: ContractDescriptor[] = [
       '新代码优先沿用官方字段名：keyWord、queryType、level、mapBound、pointLonlat、queryRadius、polygon、specify、dataTypes、show',
       '新代码必须显式传 queryType，不要依赖 type=nearby/view/polygon/category/stats/admin-area 这类兼容推断',
       'queryType=13（分类搜索）新代码显式传 mapBound，不要依赖代理默认值',
-      '运行沙箱中 URL 必须使用绝对地址：new URL("/api/tianditu/search", window.location.origin).toString()',
+      '运行沙箱中 URL 优先使用 window.__TDT_API_URL__("/api/tianditu/search")；没有该 helper 时再用 new URL("/api/tianditu/search", window.location.origin).toString()',
       '按场景设置 queryType：视野内=2、周边=3、多边形=10、行政区=12、分类=13、统计=14',
     ],
     responseChecks: [

@@ -1,4 +1,6 @@
 import type { ShareCreateResult, ShareItem, SharePublicListResult, ShareSuggestResult, ShareVisibility } from '../types/share'
+import { withBasePath } from '../utils/basePath'
+import { encodeTextBase64 } from '../utils/transportEncoding'
 
 interface ApiSuccess<T> {
   success: true
@@ -10,13 +12,11 @@ interface ApiFailure {
   error: string
 }
 
-interface ShareSuggestStreamEvent extends ShareSuggestResult {
-  type: 'suggestion_delta'
-  done?: boolean
-}
+const MAX_SUGGEST_CODE_CHARS = 48 * 1024
+const MAX_SUGGEST_HINT_CHARS = 4000
 
 async function requestJson<T>(input: RequestInfo | URL, init?: RequestInit): Promise<T> {
-  const response = await fetch(input, init)
+  const response = await fetch(typeof input === 'string' ? withBasePath(input) : input, init)
   const json = (await response.json()) as ApiSuccess<T> | ApiFailure
   if (!response.ok || !json.success) {
     const message = 'error' in json ? json.error : `HTTP ${response.status}`
@@ -36,10 +36,10 @@ function normalizeShareAssetUrl(raw: string): string {
   try {
     const url = new URL(raw, window.location.origin)
     if (url.pathname.startsWith('/share-assets/')) {
-      return `${window.location.origin}${url.pathname}${url.search}${url.hash}`
+      return `${window.location.origin}${withBasePath(url.pathname)}${url.search}${url.hash}`
     }
     if (isLocalLoopback(url.hostname) && !isLocalLoopback(window.location.hostname)) {
-      return `${window.location.protocol}//${window.location.host}${url.pathname}${url.search}${url.hash}`
+      return `${window.location.protocol}//${window.location.host}${withBasePath(url.pathname)}${url.search}${url.hash}`
     }
     return url.toString()
   } catch {
@@ -54,10 +54,10 @@ function normalizeSharePageUrl(raw: string): string {
   try {
     const url = new URL(raw, window.location.origin)
     if (url.pathname.startsWith('/share/')) {
-      return `${window.location.origin}${url.pathname}${url.search}${url.hash}`
+      return `${window.location.origin}${withBasePath(url.pathname)}${url.search}${url.hash}`
     }
     if (isLocalLoopback(url.hostname) && !isLocalLoopback(window.location.hostname)) {
-      return `${window.location.protocol}//${window.location.host}${url.pathname}${url.search}${url.hash}`
+      return `${window.location.protocol}//${window.location.host}${withBasePath(url.pathname)}${url.search}${url.hash}`
     }
     return url.toString()
   } catch {
@@ -81,9 +81,14 @@ function normalizeShareDetail<T extends ShareItem & { shareUrl: string }>(item: 
 }
 
 function normalizeShareCreate(item: ShareCreateResult): ShareCreateResult {
+  return normalizeShareDetail(item)
+}
+
+function normalizeSuggestPayload(payload: { code: string; hint?: string; prompt?: string }) {
   return {
-    ...normalizeShareDetail(item),
-    manageUrl: normalizeSharePageUrl(item.manageUrl),
+    codeBase64: encodeTextBase64(payload.code.slice(0, MAX_SUGGEST_CODE_CHARS)),
+    hint: payload.hint?.slice(0, MAX_SUGGEST_HINT_CHARS),
+    prompt: payload.prompt?.slice(0, MAX_SUGGEST_HINT_CHARS),
   }
 }
 
@@ -95,80 +100,29 @@ export const shareApi = {
     visibility?: ShareVisibility
     thumbnailBase64?: string
   }) {
+    const { code, ...rest } = payload
     const data = await requestJson<ShareCreateResult>('/api/share/maps', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({
+        ...rest,
+        codeBase64: encodeTextBase64(code),
+      }),
     })
     return normalizeShareCreate(data)
   },
 
-  suggest(payload: { code: string; hint?: string; prompt?: string }) {
+  suggest(payload: { code: string; hint?: string; prompt?: string }, options?: { signal?: AbortSignal }) {
     return requestJson<ShareSuggestResult>('/api/share/maps/suggest', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(normalizeSuggestPayload(payload)),
+      signal: options?.signal,
     })
   },
 
-  async suggestStream(
-    payload: { code: string; hint?: string; prompt?: string },
-    options: {
-      signal?: AbortSignal
-      onDelta: (event: ShareSuggestStreamEvent) => void
-    },
-  ) {
-    const response = await fetch('/api/share/maps/suggest/stream', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-      signal: options.signal,
-    })
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`)
-    }
-
-    const reader = response.body?.getReader()
-    if (!reader) throw new Error('无法获取响应流')
-
-    const decoder = new TextDecoder()
-    let buffer = ''
-
-    const processLine = (line: string) => {
-      const trimmed = line.trim()
-      if (!trimmed.startsWith('data:')) return
-      const payloadText = trimmed.slice(5).trim()
-      if (!payloadText || payloadText === '[DONE]') return
-
-      const event = JSON.parse(payloadText) as ShareSuggestStreamEvent | { type: 'error'; error?: string }
-      if (event.type === 'error') {
-        throw new Error(event.error || '生成失败')
-      }
-      options.onDelta(event)
-    }
-
-    while (true) {
-      const { done, value } = await reader.read()
-      if (done) break
-
-      buffer += decoder.decode(value, { stream: true })
-      const lines = buffer.split('\n')
-      buffer = lines.pop() || ''
-
-      for (const line of lines) {
-        processLine(line)
-      }
-    }
-
-    if (buffer.trim()) {
-      processLine(buffer)
-    }
-  },
-
-  async getDetail(slug: string, options?: { manageToken?: string; track?: boolean }) {
+  async getDetail(slug: string, options?: { track?: boolean }) {
     const query = new URLSearchParams()
-    if (options?.manageToken) query.set('manageToken', options.manageToken)
     if (options?.track === false) query.set('track', '0')
     const qs = query.toString()
     const url = `/api/share/maps/${encodeURIComponent(slug)}${qs ? `?${qs}` : ''}`
@@ -176,28 +130,12 @@ export const shareApi = {
     return normalizeShareDetail(data)
   },
 
-  async update(slug: string, payload: { manageToken: string; title?: string; description?: string; visibility?: ShareVisibility }) {
-    const data = await requestJson<ShareItem & { shareUrl: string }>(`/api/share/maps/${encodeURIComponent(slug)}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    })
-    return normalizeShareDetail(data)
-  },
-
-  async remove(slug: string, payload: { manageToken: string }) {
-    const data = await requestJson<ShareItem & { shareUrl: string }>(`/api/share/maps/${encodeURIComponent(slug)}`, {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    })
-    return normalizeShareDetail(data)
-  },
-
-  async listPublic(options?: { page?: number; pageSize?: number }) {
+  async listPublic(options?: { page?: number; pageSize?: number; q?: string; sort?: 'viewCount' | 'createdAt' }) {
     const query = new URLSearchParams()
     if (options?.page) query.set('page', String(options.page))
     if (options?.pageSize) query.set('pageSize', String(options.pageSize))
+    if (options?.q?.trim()) query.set('q', options.q.trim())
+    if (options?.sort) query.set('sort', options.sort)
     const qs = query.toString()
     const url = `/api/share/public${qs ? `?${qs}` : ''}`
     const data = await requestJson<SharePublicListResult>(url)

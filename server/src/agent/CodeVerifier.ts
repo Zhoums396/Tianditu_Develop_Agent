@@ -35,6 +35,7 @@ export function analyzeGeneratedCode(code: string, options?: { fileData?: string
   issues.push(...analyzeBoundsApiCompatibility(code))
   issues.push(...analyzeMapStyleCompatibility(code))
   issues.push(...analyzeGeometryTypeFilterCompatibility(code))
+  issues.push(...analyzeFilterExpressionCompatibility(code))
 
   const mapMutationTimingIssues = analyzeMapLoadTiming(code)
   issues.push(...mapMutationTimingIssues)
@@ -77,7 +78,7 @@ export function analyzeGeneratedCode(code: string, options?: { fileData?: string
       severity: 'warning',
       code: 'relative-proxy-url',
       message: '检测到 fetch("/api/tianditu/...") 直接相对路径调用，运行沙箱中可能触发 URL 解析失败。',
-      suggestion: '使用 new URL("/api/tianditu/...", window.location.origin).toString() 构建绝对 URL。',
+      suggestion: '优先使用 window.__TDT_API_URL__("/api/tianditu/...") 构建代理地址；没有 helper 时再用 new URL("/api/tianditu/...", window.location.origin).toString()。',
     })
   }
 
@@ -115,7 +116,7 @@ export function analyzeGeneratedCode(code: string, options?: { fileData?: string
       severity: 'error',
       code: 'search-proxy-relative-url',
       message: '检测到 /api/tianditu/search 使用相对路径，沙箱运行时可能 URL 解析失败。',
-      suggestion: '改为 new URL("/api/tianditu/search", window.location.origin).toString() 构建绝对 URL。',
+      suggestion: '优先改为 window.__TDT_API_URL__("/api/tianditu/search")；没有 helper 时再用 new URL("/api/tianditu/search", window.location.origin).toString()。',
     })
   }
 
@@ -605,6 +606,24 @@ function analyzeGeometryTypeFilterCompatibility(code: string): VerificationIssue
       code: 'geometry-type-multipoint-filter',
       message: '检测到使用 geometry-type 过滤 MultiPoint；当前运行环境里多点通常按 Point 归并。',
       suggestion: '优先改成 [\'==\', [\'geometry-type\'], \'Point\']。',
+    })
+  }
+
+  return issues
+}
+
+function analyzeFilterExpressionCompatibility(code: string): VerificationIssue[] {
+  const issues: VerificationIssue[] = []
+  const hasRuntimeArrayInFilter =
+    /\[\s*['"]in['"]\s*,\s*\[\s*['"]get['"]\s*,\s*['"][^'"]+['"]\s*\]\s*,\s*['"]literal['"]\s*,/m.test(code) ||
+    /\[\s*['"]in['"]\s*,\s*\[\s*['"]get['"]\s*,\s*['"][^'"]+['"]\s*\]\s*,\s*\[\s*['"]literal['"]\s*,/m.test(code)
+
+  if (hasRuntimeArrayInFilter) {
+    issues.push({
+      severity: 'error',
+      code: 'filter-in-runtime-array-unsupported',
+      message: '检测到在图层 filter 里用 in/literal 传入运行时数组；当前天地图 JSAPI v5 容易报 “Expected 2 arguments, but found 3”。',
+      suggestion: '不要在 filter 中直接引用 JS 数组。先遍历 GeoJSON features 写入布尔字段，例如 properties.__highlight，再用 [\'==\', [\'get\', \'__highlight\'], true] 过滤；反选使用 [\'!=\', [\'get\', \'__highlight\'], true]，或拆分为两个数据源。',
     })
   }
 

@@ -41,6 +41,14 @@ function hasExplicitFailureSignal(text: string): boolean {
   return /错误|报错|异常|崩溃|失败|黑屏|404|500|exception|undefined|not found|failed/i.test(String(text || ''))
 }
 
+function isSemanticMapJudgement(text: string): boolean {
+  return /高亮|省份|名单|数量|匹配|不一致|未高亮|错高亮|行政区|语义|数据源/.test(String(text || ''))
+}
+
+function hasHardVisualFailureSignal(text: string): boolean {
+  return /空白|黑屏|白屏|无法显示|没有显示|未渲染|报错|崩溃|控件错位|严重遮挡|404|500|exception|undefined|not found|failed/i.test(String(text || ''))
+}
+
 function clampChars(text: string, maxChars: number): string {
   if (text.length <= maxChars) return text
   return text.slice(0, maxChars)
@@ -48,7 +56,7 @@ function clampChars(text: string, maxChars: number): string {
 
 function normalizeSummary(text: unknown): string {
   const value = typeof text === 'string' ? text.replace(/\s+/g, ' ').trim() : ''
-  return clampChars(value || '视觉巡检已完成，未发现明确异常。', MAX_SUMMARY_CHARS)
+  return clampChars(value || '视觉检查已完成，未发现明确异常。', MAX_SUMMARY_CHARS)
 }
 
 function normalizeDiagnosis(text: unknown): string {
@@ -128,13 +136,13 @@ function parseJsonCandidate(text: string): Record<string, unknown> | null {
 }
 
 function unavailableResult(reason: string): VisualInspectionResult {
-  const diagnosis = clampChars(reason || '视觉巡检暂时不可用。', MAX_DIAGNOSIS_CHARS)
+  const diagnosis = clampChars(reason || '视觉检查暂时不可用。', MAX_DIAGNOSIS_CHARS)
   return {
     status: 'unavailable',
     anomalous: false,
     shouldRepair: false,
     severity: 'low',
-    summary: '视觉巡检不可用',
+    summary: '视觉检查不可用',
     diagnosis,
     repairHint: '无',
     confidence: 0,
@@ -151,9 +159,9 @@ export class VisualInspectionService {
 
   async inspect(input: VisualInspectionInput): Promise<VisualInspectionResult> {
     const imageBase64 = String(input.imageBase64 || '').trim()
-    if (!imageBase64) return unavailableResult('截图内容为空，无法执行视觉巡检。')
+    if (!imageBase64) return unavailableResult('截图内容为空，无法执行视觉检查。')
 
-    if (!config.llm.apiKey) return unavailableResult('DASHSCOPE_API_KEY 未配置，无法执行视觉巡检。')
+    if (!config.llm.apiKey) return unavailableResult('DASHSCOPE_API_KEY 未配置，无法执行视觉检查。')
 
     const hint = clampChars(String(input.hint || '').trim(), MAX_HINT_CHARS)
     const runId = String(input.runId || '').trim()
@@ -180,12 +188,14 @@ export class VisualInspectionService {
       '9) 只有当截图模糊、被遮挡、信息不足或难以判断时，confidence 才应低于 0.50，并在 diagnosis 说明不确定性来源。',
       '10) 如果截图主要呈现“加载中 / loading / 等待中 / 骨架屏”等加载态，而没有明确错误证据，不要触发自动修复：anomalous=false，shouldRepair=false。',
       '11) 如果截图主体是可用的地图页面，即使没有看到 hint 中提到的某些额外标题栏、侧栏或卡片，也不要仅凭“未看到这些额外 UI”就判定异常。',
+      '12) 不要用截图去验收复杂业务语义或数据精确性，例如“23 个省份是否全部正确高亮”“名称列表和地图区域是否逐项匹配”。这类判断无法仅凭截图可靠确认，最多 anomalous=true 且 shouldRepair=false，除非同时存在空白、黑屏、报错、关键图层完全未渲染等硬故障。',
+      '13) 如果地图主体、图例、面板和专题图层都已显示，只是你怀疑颜色/名单/数量存在语义不一致，必须 shouldRepair=false。',
     ].join('\n')
 
     const userPrompt = [
       runId ? `runId: ${runId}` : 'runId: (none)',
       `hint: ${hint || '(none)'}`,
-      '请开始视觉巡检并输出 JSON。',
+      '请开始视觉检查并输出 JSON。',
     ].join('\n')
 
     try {
@@ -234,6 +244,13 @@ export class VisualInspectionService {
         severity = 'low'
         summary = '页面处于加载阶段，暂不判定为需要修复的异常。'
         diagnosis = normalizeDiagnosis(`${diagnosis} 当前画面更接近加载态，而不是明确故障。`)
+        repairHint = '无'
+      }
+      if (shouldRepair && isSemanticMapJudgement(combinedText) && !hasHardVisualFailureSignal(combinedText)) {
+        shouldRepair = false
+        severity = 'low'
+        summary = '疑似语义一致性问题，暂不触发自动修复。'
+        diagnosis = normalizeDiagnosis(`${diagnosis} 当前截图不足以可靠判断地图区域与名单/数量是否逐项一致，且页面主体已渲染。`)
         repairHint = '无'
       }
       const confidence = resolveVisualInspectionConfidence(parsed.confidence, {

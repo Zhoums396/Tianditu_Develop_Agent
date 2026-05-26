@@ -165,7 +165,7 @@ export class VisualRenderService {
         if (expectsTMapGL && hasWebGlError) {
           return {
             ok: false,
-            reason: '视觉巡检运行环境不支持 WebGL，无法可靠渲染天地图截图。',
+            reason: '视觉检查运行环境不支持 WebGL，无法可靠渲染天地图截图。',
           }
         }
 

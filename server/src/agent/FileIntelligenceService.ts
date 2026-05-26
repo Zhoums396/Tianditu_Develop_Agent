@@ -256,6 +256,14 @@ function resolveLocalUploadPath(fileUrl: string): string | null {
     pathname = value
   }
 
+  const rawBase = config.publicSamples.basePath || process.env.VITE_BASE_PATH || ''
+  const basePath = rawBase && rawBase !== '/'
+    ? `/${rawBase.replace(/^\/+|\/+$/g, '')}`
+    : ''
+  if (basePath && pathname.startsWith(`${basePath}/uploads/`)) {
+    pathname = pathname.slice(basePath.length)
+  }
+
   if (!pathname.startsWith('/uploads/')) return null
   const relativePath = decodeURIComponent(pathname.slice('/uploads/'.length))
   if (!relativePath || relativePath.includes('..')) return null

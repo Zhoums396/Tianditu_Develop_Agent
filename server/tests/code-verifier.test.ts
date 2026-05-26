@@ -309,6 +309,24 @@ describe('CodeVerifier symbol text font checks', () => {
     expect(issues.some((issue) => issue.code === 'geometry-type-multipolygon-filter')).toBe(false)
   })
 
+  it('flags in/literal filters that pass runtime arrays to TMapGL', () => {
+    const issues = analyzeGeneratedCode(`
+      var highlightProvinces = ['北京', '上海']
+      map.addLayer({
+        id: 'province-fill',
+        type: 'fill',
+        source: 'province-data',
+        filter: ['all',
+          ['==', ['geometry-type'], 'Polygon'],
+          ['in', ['get', 'name'], 'literal', highlightProvinces]
+        ],
+        paint: { 'fill-color': '#1890ff' }
+      })
+    `)
+
+    expect(issues.some((issue) => issue.code === 'filter-in-runtime-array-unsupported')).toBe(true)
+  })
+
   it('does not flag unrelated isValid usage when LngLatBounds is present', () => {
     const issues = analyzeGeneratedCode(`
       var bounds = new TMapGL.LngLatBounds()

@@ -1,12 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useParams, useSearchParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { shareApi } from '../services/shareApi'
-import type { ShareItem, ShareVisibility } from '../types/share'
+import type { ShareItem } from '../types/share'
 import { copyText } from '../utils/copyText'
-import { docsUrl } from '../utils/docsUrl'
 import { installAppFullscreenEnhancer } from '../utils/appFullscreenEnhancer'
-import { hasActiveFullscreen, requestElementFullscreen, exitDocumentFullscreen } from '../utils/fullscreen'
-import { ViewportModeControls } from '../components/map/ViewportModeControls'
 
 type ShareDetail = ShareItem & { shareUrl: string }
 
@@ -17,8 +14,6 @@ function formatTime(ts?: number) {
 
 export function ShareViewerPage() {
   const { slug = '' } = useParams()
-  const [searchParams] = useSearchParams()
-  const manageToken = searchParams.get('manageToken')?.trim() || ''
   const iframeRef = useRef<HTMLIFrameElement | null>(null)
   const previewShellRef = useRef<HTMLElement | null>(null)
 
@@ -26,17 +21,7 @@ export function ShareViewerPage() {
   const [error, setError] = useState<string | null>(null)
   const [item, setItem] = useState<ShareDetail | null>(null)
   const [copyHint, setCopyHint] = useState<string | null>(null)
-  const [pageFilled, setPageFilled] = useState(false)
-  const [fullscreenActive, setFullscreenActive] = useState(false)
-  const contentOnlyMode = pageFilled || fullscreenActive
-
-  const [title, setTitle] = useState('')
-  const [description, setDescription] = useState('')
-  const [visibility, setVisibility] = useState<ShareVisibility>('unlisted')
-  const [saving, setSaving] = useState(false)
-  const [removing, setRemoving] = useState(false)
-
-  const canManage = Boolean(manageToken && item?.canManage)
+  const [shareInfoOpen, setShareInfoOpen] = useState(true)
 
   const load = async (track = true) => {
     if (!slug) {
@@ -47,10 +32,7 @@ export function ShareViewerPage() {
     setLoading(true)
     setError(null)
     try {
-      const detail = await shareApi.getDetail(slug, {
-        manageToken: manageToken || undefined,
-        track,
-      })
+      const detail = await shareApi.getDetail(slug, { track })
       setItem(detail)
     } catch (err: any) {
       setError(err?.message || '加载分享失败')
@@ -61,14 +43,7 @@ export function ShareViewerPage() {
 
   useEffect(() => {
     void load(true)
-  }, [slug, manageToken])
-
-  useEffect(() => {
-    if (!item) return
-    setTitle(item.title || '')
-    setDescription(item.description || '')
-    setVisibility(item.visibility)
-  }, [item?.slug, item?.updatedAt])
+  }, [slug])
 
   useEffect(() => {
     const iframe = iframeRef.current
@@ -89,68 +64,6 @@ export function ShareViewerPage() {
       cleanup()
     }
   }, [item?.htmlUrl, item?.status])
-
-  useEffect(() => {
-    if (!pageFilled) return
-    const prevOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => {
-      document.body.style.overflow = prevOverflow
-    }
-  }, [pageFilled])
-
-  useEffect(() => {
-    const syncFullscreenState = () => {
-      setFullscreenActive(hasActiveFullscreen(document))
-    }
-    syncFullscreenState()
-    document.addEventListener('fullscreenchange', syncFullscreenState)
-    document.addEventListener('webkitfullscreenchange', syncFullscreenState as EventListener)
-    return () => {
-      document.removeEventListener('fullscreenchange', syncFullscreenState)
-      document.removeEventListener('webkitfullscreenchange', syncFullscreenState as EventListener)
-    }
-  }, [])
-
-  useEffect(() => {
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return
-
-      if (hasActiveFullscreen(document)) {
-        event.preventDefault()
-        void exitDocumentFullscreen(document)
-        return
-      }
-
-      if (pageFilled) {
-        event.preventDefault()
-        setPageFilled(false)
-      }
-    }
-
-    const bindWindow = (target: Window | null | undefined) => {
-      if (!target) return () => {}
-      target.addEventListener('keydown', handleEscape)
-      return () => target.removeEventListener('keydown', handleEscape)
-    }
-
-    const iframe = iframeRef.current
-    let cleanupFrameWindow = bindWindow(iframe?.contentWindow)
-
-    const handleFrameLoad = () => {
-      cleanupFrameWindow()
-      cleanupFrameWindow = bindWindow(iframe?.contentWindow)
-    }
-
-    window.addEventListener('keydown', handleEscape)
-    iframe?.addEventListener('load', handleFrameLoad)
-
-    return () => {
-      window.removeEventListener('keydown', handleEscape)
-      iframe?.removeEventListener('load', handleFrameLoad)
-      cleanupFrameWindow()
-    }
-  }, [pageFilled])
 
   const metaItems = useMemo(() => {
     if (!item) return []
@@ -176,231 +89,107 @@ export function ShareViewerPage() {
     setTimeout(() => setCopyHint(null), 2200)
   }
 
-  const handleSave = async () => {
-    if (!item || !manageToken) return
-    setSaving(true)
-    setError(null)
-    try {
-      const updated = await shareApi.update(item.slug, {
-        manageToken,
-        title,
-        description,
-        visibility,
-      })
-      setItem(updated)
-    } catch (err: any) {
-      setError(err?.message || '保存失败')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const handleRemove = async () => {
-    if (!item || !manageToken) return
-    const ok = window.confirm('确认下架这个分享吗？下架后公开列表不可见。')
-    if (!ok) return
-
-    setRemoving(true)
-    setError(null)
-    try {
-      const removed = await shareApi.remove(item.slug, { manageToken })
-      setItem(removed)
-    } catch (err: any) {
-      setError(err?.message || '下架失败')
-    } finally {
-      setRemoving(false)
-    }
-  }
-
-  const togglePageFill = () => {
-    setPageFilled((value) => !value)
-  }
-
-  const toggleSystemFullscreen = () => {
-    if (hasActiveFullscreen(document)) {
-      void exitDocumentFullscreen(document)
-      return
-    }
-    void requestElementFullscreen(previewShellRef.current)
-  }
-
   return (
-    <div className="min-h-screen bg-slate-50">
-      {!contentOnlyMode && (
-      <header className="h-14 border-b border-slate-200 bg-white/95 backdrop-blur-sm px-4 sm:px-6">
-        <div className="max-w-[1600px] mx-auto h-full flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-3 no-underline">
-            <img src="/tianditu-logo.png" alt="天地图" className="h-8 object-contain" />
-            <img src="/tianditu-agent-logo.svg" alt="天地图开发智能体" className="h-7 sm:h-8 w-auto object-contain hidden sm:block" />
-          </Link>
-
-          <div className="flex items-center gap-2 text-sm">
-            <a href={docsUrl} className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50/60 no-underline transition">
-              使用文档
-            </a>
-            <Link to="/gallery" className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50/60 no-underline transition">
-              公开样例
-            </Link>
-            <Link to="/workspace" className="px-3 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 no-underline transition">
-              新建地图
-            </Link>
-          </div>
-        </div>
-      </header>
-      )}
-
-      <main className={`${contentOnlyMode ? 'max-w-none px-0 py-0' : 'max-w-[1600px] mx-auto px-4 sm:px-6 py-4'}`}>
-
+    <div className="min-h-screen bg-[#eef2f6]">
+      <main className="min-h-screen">
         {loading && (
-          <div className="rounded-xl border border-slate-200 bg-white p-6 text-sm text-slate-500">
+          <div className="m-6 rounded-sm border border-slate-200 bg-white p-6 text-sm text-slate-500">
             正在加载分享内容...
           </div>
         )}
 
         {!loading && error && (
-          <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-600">
+          <div className="m-6 rounded-sm border border-red-200 bg-red-50 p-4 text-sm text-red-600">
             {error}
           </div>
         )}
 
         {!loading && !error && item && (
-          <div className="grid grid-cols-1 xl:grid-cols-[1fr_380px] gap-4">
-            <section
+          <section
               ref={previewShellRef}
-              className={`rounded-xl border border-slate-200 bg-white overflow-hidden ${
-                contentOnlyMode
-                  ? 'fixed inset-0 z-[60] rounded-none border-0 shadow-none ring-0'
-                  : ''
-              }`}
+            className="relative h-screen min-h-[640px] overflow-hidden bg-slate-100"
             >
-              {!contentOnlyMode && (
-              <div className="border-b border-slate-100 px-4 py-3 flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <h1 className="text-lg font-semibold text-slate-800 truncate">{item.title}</h1>
-                  {item.description && <p className="text-sm text-slate-500 mt-0.5 line-clamp-1">{item.description}</p>}
-                </div>
-                <button
-                  onClick={() => withCopyHint(item.shareUrl, '已复制分享链接', '复制失败，请手动复制')}
-                  className="px-3 py-1.5 rounded-lg border border-slate-200 text-sm text-slate-700 hover:bg-slate-50 transition shrink-0"
-                >
-                  复制链接
-                </button>
-              </div>
-              )}
-
               {item.status === 'active' ? (
-                <div className={`relative ${contentOnlyMode ? 'h-screen min-h-0' : 'h-[calc(100vh-180px)] min-h-[520px]'}`}>
+                <>
                   <iframe
                     ref={iframeRef}
                     key={item.htmlUrl}
                     src={item.htmlUrl}
-                    className="w-full h-full border-0"
+                    className="absolute inset-0 h-full w-full border-0"
                     sandbox="allow-scripts allow-same-origin"
                     allow="fullscreen"
                     allowFullScreen
                     title="分享地图预览"
                   />
 
-                  <ViewportModeControls
-                    pageFilled={pageFilled}
-                    fullscreenActive={fullscreenActive}
-                    onTogglePageFill={togglePageFill}
-                    onToggleFullscreen={toggleSystemFullscreen}
-                    className="absolute right-3 bottom-3 z-20"
-                  />
-                </div>
+                  <Link
+                    to="/gallery"
+                    className="absolute left-4 top-4 z-20 flex h-8 w-8 items-center justify-center bg-white/95 text-slate-600 shadow-[0_4px_14px_rgba(15,23,42,0.12)] no-underline hover:text-blue-600"
+                    aria-label="返回公开样例"
+                    title="返回公开样例"
+                  >
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19 8 12l7-7" />
+                    </svg>
+                  </Link>
+
+                  {shareInfoOpen && (
+                        <aside className="absolute right-3 top-3 z-20 w-[390px] max-w-[calc(100vw-24px)] bg-white shadow-[0_8px_26px_rgba(15,23,42,0.16)]">
+                          <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-4">
+                            <div className="min-w-0">
+                              <div className="mb-2 inline-flex items-center bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-600">公开样例</div>
+                              <h1 className="text-lg font-semibold leading-7 text-slate-900 line-clamp-2">{item.title}</h1>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setShareInfoOpen(false)}
+                              className="flex h-8 w-8 shrink-0 items-center justify-center text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+                              aria-label="关闭分享信息"
+                            >
+                              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M6 18 18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </div>
+                          <div className="px-5 py-4">
+                            <p className="text-sm leading-7 text-slate-600">{item.description || '未填写描述'}</p>
+                            <div className="mt-4 space-y-3 border-t border-slate-200 pt-4">
+                              {metaItems.map((meta) => (
+                                <div key={meta.label} className="flex items-center justify-between gap-4 text-sm">
+                                  <span className="text-slate-500">{meta.label}</span>
+                                  <span className="text-right text-slate-800">{meta.value}</span>
+                                </div>
+                              ))}
+                              <div className="flex items-center justify-between gap-4 text-sm">
+                                <span className="text-slate-500">创建人</span>
+                                <span className="text-slate-800">{item.creatorName || '普通用户'}</span>
+                              </div>
+                            </div>
+                            <div className="mt-5 flex items-center justify-between gap-3 border-t border-slate-200 pt-4">
+                              <span className="text-xs text-slate-400">可复制链接分享当前地图</span>
+                              <button
+                                onClick={() => withCopyHint(item.shareUrl, '已复制分享链接', '复制失败，请手动复制')}
+                                className="border border-blue-200 bg-blue-50 px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-100"
+                              >
+                                复制链接
+                              </button>
+                            </div>
+                          </div>
+                          {copyHint && (
+                            <div className="mx-5 mb-4 border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
+                              {copyHint}
+                            </div>
+                          )}
+                        </aside>
+                  )}
+
+                </>
               ) : (
-                <div className="h-[calc(100vh-180px)] min-h-[520px] flex items-center justify-center text-slate-500">
+                <div className="flex h-full items-center justify-center text-slate-500">
                   该分享已下架
                 </div>
               )}
-            </section>
-
-            <aside className={`rounded-xl border border-slate-200 bg-white p-4 space-y-4 h-fit ${contentOnlyMode ? 'hidden' : ''}`}>
-              <div>
-                <h2 className="text-sm font-semibold text-slate-800 mb-2">分享信息</h2>
-                <div className="space-y-2">
-                  {metaItems.map((meta) => (
-                    <div key={meta.label} className="flex items-center justify-between text-sm">
-                      <span className="text-slate-500">{meta.label}</span>
-                      <span className="text-slate-700">{meta.value}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {copyHint && (
-                <div className="rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-700 text-xs px-3 py-2">
-                  {copyHint}
-                </div>
-              )}
-
-              {manageToken && !item.canManage && (
-                <div className="rounded-lg border border-amber-200 bg-amber-50 text-amber-700 text-xs px-3 py-2">
-                  当前管理口令无效，仅可查看，不能编辑或下架。
-                </div>
-              )}
-
-              {canManage && (
-                <div className="space-y-3 border-t border-slate-100 pt-3">
-                  <h3 className="text-sm font-semibold text-slate-800">管理分享</h3>
-
-                  <div className="space-y-1.5">
-                    <label className="text-xs text-slate-600">标题</label>
-                    <input
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                      maxLength={80}
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-xs text-slate-600">描述</label>
-                    <textarea
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
-                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm h-20 resize-none"
-                      maxLength={240}
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-xs text-slate-600">可见性</label>
-                    <select
-                      value={visibility}
-                      onChange={(e) => setVisibility(e.target.value as ShareVisibility)}
-                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                    >
-                      <option value="unlisted">未公开链接</option>
-                      <option value="public">公开样例</option>
-                    </select>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <button
-                      disabled={saving}
-                      onClick={handleSave}
-                      className={`px-3 py-2 rounded-lg text-sm text-white transition ${
-                        saving ? 'bg-slate-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
-                      }`}
-                    >
-                      {saving ? '保存中...' : '保存修改'}
-                    </button>
-                    <button
-                      disabled={removing}
-                      onClick={handleRemove}
-                      className={`px-3 py-2 rounded-lg text-sm transition ${
-                        removing ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : 'bg-red-50 text-red-600 hover:bg-red-100'
-                      }`}
-                    >
-                      {removing ? '下架中...' : '下架分享'}
-                    </button>
-                  </div>
-                </div>
-              )}
-            </aside>
-          </div>
+          </section>
         )}
       </main>
     </div>

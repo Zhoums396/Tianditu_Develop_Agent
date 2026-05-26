@@ -21,7 +21,7 @@
 ## 官方端点
 
 - `http://api.tianditu.gov.cn/transit?type=busline&postStr=...`
-- 默认 key：`4043dde46add842282bacc412299311d`
+- 默认 key：`${TIANDITU_TOKEN}`
 
 ## 三种请求
 
@@ -30,7 +30,7 @@
 最小模板：
 
 ```bash
-curl -s "http://api.tianditu.gov.cn/transit?type=busline&postStr={\"uuid\":\"23212\"}&tk=4043dde46add842282bacc412299311d"
+curl -s "http://api.tianditu.gov.cn/transit?type=busline&postStr={\"uuid\":\"23212\"}&tk=${TIANDITU_TOKEN}"
 ```
 
 官方页写的是：如果 `uuid` 对应线路，返回 `lineinfo`；如果 `uuid` 对应站点，返回 `Stationdata`。
@@ -39,13 +39,13 @@ curl -s "http://api.tianditu.gov.cn/transit?type=busline&postStr={\"uuid\":\"232
 ### 2. 查询公交站点详情
 
 ```bash
-curl -s "http://api.tianditu.gov.cn/transit?type=busline&postStr={\"uuid\":\"133057\"}&tk=4043dde46add842282bacc412299311d"
+curl -s "http://api.tianditu.gov.cn/transit?type=busline&postStr={\"uuid\":\"133057\"}&tk=${TIANDITU_TOKEN}"
 ```
 
 ### 3. 查询返程线路
 
 ```bash
-curl -s "http://api.tianditu.gov.cn/transit?type=busline&postStr={\"lineUuid\":\"21169\",\"stationUuid\":\"128156\"}&tk=4043dde46add842282bacc412299311d"
+curl -s "http://api.tianditu.gov.cn/transit?type=busline&postStr={\"lineUuid\":\"21169\",\"stationUuid\":\"128156\"}&tk=${TIANDITU_TOKEN}"
 ```
 
 ## 参数提取规则
@@ -165,7 +165,7 @@ live 返回常见是平铺字段：
 
 - 端点：/transit?type=busline
 - 请求类型：uuid 明细 / 返程线路
-- 默认 key：4043dde46add842282bacc412299311d
+- 默认 key：${TIANDITU_TOKEN}
 
 结果重点查看：
 - linename / station[]

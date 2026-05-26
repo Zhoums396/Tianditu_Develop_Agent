@@ -8,8 +8,8 @@ const BASE_URL = 'https://api.tianditu.gov.cn'
 export class TiandituApi {
   private token: string
 
-  constructor() {
-    this.token = config.tiandituToken
+  constructor(token = config.tiandituToken) {
+    this.token = token
   }
 
   /** POI 搜索 */

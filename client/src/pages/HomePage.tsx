@@ -3,139 +3,162 @@ import { useEffect } from 'react'
 import { exampleCards, type ExampleCard } from '../data/exampleCards'
 import { useAuthStore } from '../stores/useAuthStore'
 import { docsUrl } from '../utils/docsUrl'
+import { appAsset } from '../utils/basePath'
+import { UserMenu } from '../components/auth/UserMenu'
 
-function CardPreview({ variant, gradient }: { variant: ExampleCard['preview']; gradient: string }) {
+function CardPreview({ example }: { example: ExampleCard }) {
+  const variant = example.preview
+  const coverUrl = example.coverUrl ? appAsset(example.coverUrl) : ''
+  const dark = variant === 'points' || variant === 'flood'
+  const satellite = variant === 'parcel' || variant === 'bar3d'
+  const accent = variant === 'history'
+    ? 'bg-red-500'
+    : variant === 'pin'
+      ? 'bg-rose-500'
+      : variant === 'points' || variant === 'flood'
+        ? 'bg-emerald-500'
+        : 'bg-blue-500'
+
   return (
-    <div className={`relative h-28 rounded-xl overflow-hidden bg-gradient-to-br ${gradient}`}>
+    <div className={`relative aspect-[1.72/1] overflow-hidden ${dark ? 'bg-slate-900' : satellite ? 'bg-stone-200' : 'bg-[#e8f0e3]'}`}>
+      {coverUrl ? (
+        <img
+          src={coverUrl}
+          alt={`${example.title}封面`}
+          className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.025]"
+          loading="lazy"
+        />
+      ) : (
+        <>
       <div
-        className="absolute inset-0 opacity-25"
+        className={`absolute inset-0 ${dark ? 'opacity-25' : 'opacity-60'}`}
         style={{
           backgroundImage:
-            'repeating-linear-gradient(0deg, rgba(255,255,255,.45), rgba(255,255,255,.45) 1px, transparent 1px, transparent 16px), repeating-linear-gradient(90deg, rgba(255,255,255,.35), rgba(255,255,255,.35) 1px, transparent 1px, transparent 16px)',
+            dark
+              ? 'linear-gradient(28deg, transparent 0 44%, rgba(255,255,255,.45) 44.5% 45.2%, transparent 45.8%), linear-gradient(145deg, transparent 0 58%, rgba(255,255,255,.35) 58.4% 59%, transparent 59.6%)'
+              : 'linear-gradient(28deg, transparent 0 44%, rgba(204,132,50,.55) 44.5% 45.5%, transparent 46%), linear-gradient(145deg, transparent 0 58%, rgba(224,168,70,.55) 58.4% 59.6%, transparent 60.2%), linear-gradient(88deg, transparent 0 52%, rgba(137,171,102,.4) 52.2% 53%, transparent 53.5%)',
         }}
       />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_25%_20%,rgba(255,255,255,.55),transparent_40%),radial-gradient(circle_at_70%_80%,rgba(255,255,255,.35),transparent_45%)]" />
+      <div
+        className="absolute inset-0"
+        style={{
+          backgroundImage: dark
+            ? 'radial-gradient(circle at 22% 24%, rgba(71,85,105,.8) 0 10%, transparent 11%), radial-gradient(circle at 78% 64%, rgba(30,41,59,.9) 0 12%, transparent 13%)'
+            : 'radial-gradient(circle at 20% 22%, rgba(181,215,239,.85) 0 13%, transparent 14%), radial-gradient(circle at 78% 62%, rgba(180,218,188,.9) 0 12%, transparent 13%), radial-gradient(circle at 50% 80%, rgba(226,235,215,.9) 0 18%, transparent 19%)',
+        }}
+      />
 
       {variant === 'map' && (
         <>
-          <div className="absolute left-4 right-4 top-5 h-[2px] bg-white/85 rotate-6" />
-          <div className="absolute left-10 right-8 top-12 h-[2px] bg-white/75 -rotate-3" />
-          <div className="absolute left-6 right-12 bottom-5 h-[2px] bg-white/70 rotate-2" />
-          <div className="absolute right-7 top-8 w-2.5 h-2.5 rounded-full bg-white shadow-[0_0_0_4px_rgba(255,255,255,.25)]" />
+          <div className="absolute left-0 right-0 top-11 h-2 bg-amber-300/75 rotate-[-6deg] shadow-[0_0_0_1px_rgba(255,255,255,.7)]" />
+          <div className="absolute left-12 right-3 bottom-8 h-1.5 bg-white/90 rotate-[5deg] shadow-[0_0_0_1px_rgba(239,197,82,.7)]" />
+          <div className="absolute right-12 top-10 h-3 w-3 rounded-full bg-emerald-500 ring-2 ring-white" />
         </>
       )}
 
       {variant === 'pin' && (
         <>
-          <div className="absolute left-4 top-4 w-16 h-10 rounded-lg bg-white/85" />
-          <div className="absolute left-8 top-7 w-6 h-1.5 rounded bg-rose-300/80" />
-          <div className="absolute right-8 top-7 w-4 h-4 rounded-full bg-white/90 shadow-[0_0_0_4px_rgba(255,255,255,.28)]" />
-          <div className="absolute right-[29px] top-10 border-l-[5px] border-r-[5px] border-t-[8px] border-l-transparent border-r-transparent border-t-white/90" />
-          <div className="absolute left-14 bottom-4 w-4 h-4 rounded-full bg-white/90 shadow-[0_0_0_4px_rgba(255,255,255,.25)]" />
+          <div className="absolute left-0 right-0 top-12 h-2 bg-amber-300/75 rotate-[4deg]" />
+          <div className="absolute left-12 top-9 h-3 w-3 rounded-full bg-rose-500 ring-2 ring-white" />
+          <div className="absolute right-16 top-14 h-3 w-3 rounded-full bg-rose-500 ring-2 ring-white" />
+          <div className="absolute left-1/2 bottom-8 h-3 w-3 rounded-full bg-rose-500 ring-2 ring-white" />
         </>
       )}
 
       {variant === 'parcel' && (
         <>
-          <div className="absolute left-4 top-6 w-16 h-10 rounded-md border border-white/85 bg-white/25" />
-          <div className="absolute left-14 top-14 w-14 h-8 rounded-md border border-white/85 bg-white/20" />
-          <div className="absolute right-5 top-5 w-12 h-9 rounded-md border border-white/85 bg-white/25" />
-          <div className="absolute right-9 bottom-4 w-2 h-2 rounded-full bg-white/90" />
-          <div className="absolute right-14 bottom-7 w-2 h-2 rounded-full bg-white/80" />
+          <div className="absolute left-9 top-7 h-12 w-16 border-2 border-white/90 bg-emerald-500/20" />
+          <div className="absolute left-24 top-12 h-10 w-20 border-2 border-white/90 bg-amber-500/20" />
+          <div className="absolute right-10 top-8 h-14 w-16 border-2 border-white/90 bg-sky-500/20" />
         </>
       )}
 
       {variant === 'points' && (
         <>
-          <div className="absolute left-4 top-4 bottom-4 w-16 rounded-lg bg-white/25 border border-white/50" />
-          <div className="absolute left-7 top-8 w-10 h-1.5 rounded bg-white/70" />
-          <div className="absolute left-7 top-12 w-8 h-1.5 rounded bg-white/55" />
-          <div className="absolute right-6 top-7 w-2.5 h-2.5 rounded-full bg-white/95" />
-          <div className="absolute right-12 top-14 w-2 h-2 rounded-full bg-white/85" />
-          <div className="absolute right-9 bottom-7 w-2.5 h-2.5 rounded-full bg-white/90" />
-          <div className="absolute right-14 bottom-5 w-2 h-2 rounded-full bg-white/80" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_40%,rgba(16,185,129,.45),transparent_18%),radial-gradient(circle_at_70%_60%,rgba(59,130,246,.3),transparent_20%)]" />
+          <div className="absolute right-10 top-8 h-2.5 w-2.5 rounded-full bg-emerald-300 ring-2 ring-white/80" />
+          <div className="absolute right-20 top-16 h-2.5 w-2.5 rounded-full bg-emerald-300 ring-2 ring-white/80" />
+          <div className="absolute right-14 bottom-10 h-2.5 w-2.5 rounded-full bg-emerald-300 ring-2 ring-white/80" />
         </>
       )}
 
       {variant === 'flood' && (
         <>
-          <div className="absolute left-5 top-7 w-8 h-8 rounded-full bg-white/35 blur-[1px]" />
-          <div className="absolute left-11 top-11 w-12 h-12 rounded-full bg-white/25 blur-[1px]" />
-          <div className="absolute right-8 bottom-6 w-10 h-10 rounded-full bg-white/35 blur-[1px]" />
-          <div className="absolute right-14 top-6 w-3 h-3 rounded-full bg-white/95" />
-          <div className="absolute left-20 bottom-4 w-3 h-3 rounded-full bg-white/90" />
+          <div className="absolute left-8 top-8 h-16 w-16 rounded-full bg-cyan-400/35 blur-md" />
+          <div className="absolute left-24 top-12 h-20 w-20 rounded-full bg-blue-400/30 blur-md" />
+          <div className="absolute right-10 bottom-8 h-16 w-16 rounded-full bg-sky-300/35 blur-md" />
         </>
       )}
 
       {variant === 'history' && (
         <>
           <svg viewBox="0 0 200 110" className="absolute inset-0 w-full h-full">
-            <path d="M18 72 C 44 42, 62 76, 88 48 S 132 34, 182 58" fill="none" stroke="rgba(255,255,255,.92)" strokeWidth="3.5" strokeLinecap="round" />
-            <path d="M24 84 C 58 56, 90 94, 132 68" fill="none" stroke="rgba(255,230,230,.85)" strokeWidth="2.5" strokeLinecap="round" strokeDasharray="5 5" />
+            <path d="M18 72 C 44 42, 62 76, 88 48 S 132 34, 182 58" fill="none" stroke="rgba(220,38,38,.9)" strokeWidth="3.5" strokeLinecap="round" />
+            <path d="M24 84 C 58 56, 90 94, 132 68" fill="none" stroke="rgba(234,88,12,.86)" strokeWidth="2.5" strokeLinecap="round" strokeDasharray="5 5" />
           </svg>
-          <div className="absolute left-8 top-8 w-2.5 h-2.5 rounded-full bg-white/95" />
-          <div className="absolute left-20 top-14 w-2 h-2 rounded-full bg-white/85" />
-          <div className="absolute right-10 top-10 w-2.5 h-2.5 rounded-full bg-white/95" />
-          <div className="absolute right-16 bottom-8 w-8 h-8 rounded-full border border-white/50 bg-white/20 flex items-center justify-center text-[10px] font-semibold text-white/90">90</div>
+          <div className="absolute left-8 top-8 w-2.5 h-2.5 rounded-full bg-red-500 ring-2 ring-white" />
+          <div className="absolute right-16 bottom-8 w-8 h-8 rounded-full border border-red-200 bg-white/75 flex items-center justify-center text-[10px] font-semibold text-red-600">90</div>
         </>
       )}
 
       {variant === 'drive' && (
         <>
           <svg viewBox="0 0 200 110" className="absolute inset-0 w-full h-full">
-            <path d="M18 80 C 55 20, 120 92, 178 30" fill="none" stroke="rgba(255,255,255,.92)" strokeWidth="4" strokeLinecap="round" />
+            <path d="M18 80 C 55 20, 120 92, 178 30" fill="none" stroke="rgba(37,99,235,.92)" strokeWidth="4" strokeLinecap="round" />
           </svg>
-          <div className="absolute left-4 bottom-6 w-3 h-3 rounded-full bg-green-300 border-2 border-white" />
-          <div className="absolute right-5 top-6 w-3 h-3 rounded-full bg-rose-300 border-2 border-white" />
+          <div className="absolute left-4 bottom-6 w-3 h-3 rounded-full bg-green-500 border-2 border-white" />
+          <div className="absolute right-5 top-6 w-3 h-3 rounded-full bg-rose-500 border-2 border-white" />
         </>
       )}
 
       {variant === 'transit' && (
         <>
           <svg viewBox="0 0 200 110" className="absolute inset-0 w-full h-full">
-            <path d="M20 28 L176 28" fill="none" stroke="rgba(255,255,255,.88)" strokeWidth="3" strokeLinecap="round" />
-            <path d="M34 80 C 76 44, 120 92, 168 54" fill="none" stroke="rgba(224,255,255,.94)" strokeWidth="3" strokeLinecap="round" />
+            <path d="M20 28 L176 28" fill="none" stroke="rgba(14,165,233,.9)" strokeWidth="3" strokeLinecap="round" />
+            <path d="M34 80 C 76 44, 120 92, 168 54" fill="none" stroke="rgba(245,158,11,.9)" strokeWidth="3" strokeLinecap="round" />
           </svg>
-          <div className="absolute left-10 top-[25px] w-2 h-2 rounded-full bg-white" />
-          <div className="absolute left-24 top-[25px] w-2 h-2 rounded-full bg-white" />
-          <div className="absolute right-9 top-[25px] w-2 h-2 rounded-full bg-white" />
-          <div className="absolute left-14 bottom-6 w-2 h-2 rounded-full bg-white" />
-          <div className="absolute right-16 bottom-8 w-2 h-2 rounded-full bg-white" />
+          <div className="absolute left-10 top-[25px] w-2 h-2 rounded-full bg-white ring-2 ring-sky-500" />
+          <div className="absolute right-9 top-[25px] w-2 h-2 rounded-full bg-white ring-2 ring-sky-500" />
         </>
       )}
 
       {variant === 'admin' && (
         <>
           <svg viewBox="0 0 200 110" className="absolute inset-0 w-full h-full">
-            <path d="M28 26 L88 20 L116 32 L162 26 L176 52 L148 74 L106 82 L64 78 L40 54 Z" fill="rgba(255,255,255,.2)" stroke="rgba(255,255,255,.92)" strokeWidth="2" />
-            <path d="M86 22 L90 79" stroke="rgba(255,255,255,.76)" strokeWidth="1.5" />
-            <path d="M120 31 L108 81" stroke="rgba(255,255,255,.76)" strokeWidth="1.5" />
+            <path d="M28 26 L88 20 L116 32 L162 26 L176 52 L148 74 L106 82 L64 78 L40 54 Z" fill="rgba(96,165,250,.18)" stroke="rgba(37,99,235,.82)" strokeWidth="2" />
+            <path d="M86 22 L90 79" stroke="rgba(37,99,235,.62)" strokeWidth="1.5" />
+            <path d="M120 31 L108 81" stroke="rgba(37,99,235,.62)" strokeWidth="1.5" />
           </svg>
         </>
       )}
 
       {variant === 'batch' && (
         <>
-          <div className="absolute left-4 top-4 bottom-4 w-16 rounded-lg bg-white/30 border border-white/50" />
-          <div className="absolute left-7 top-9 w-10 h-1.5 rounded bg-white/85" />
-          <div className="absolute left-7 top-[3.25rem] w-10 h-1.5 rounded bg-white/75" />
-          <div className="absolute left-7 top-[4.25rem] w-7 h-1.5 rounded bg-white/65" />
-          <div className="absolute right-8 top-8 w-2.5 h-2.5 rounded-full bg-white/95" />
-          <div className="absolute right-14 top-15 w-2.5 h-2.5 rounded-full bg-white/90" />
-          <div className="absolute right-10 bottom-6 w-2.5 h-2.5 rounded-full bg-white/95" />
+          <div className="absolute left-5 top-5 bottom-5 w-16 bg-white/80 shadow-sm" />
+          <div className="absolute left-8 top-9 w-9 h-1.5 rounded bg-slate-300" />
+          <div className="absolute left-8 top-[3.1rem] w-10 h-1.5 rounded bg-slate-300" />
+          <div className="absolute right-8 top-8 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white" />
+          <div className="absolute right-14 top-[3.75rem] w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white" />
         </>
       )}
 
       {variant === 'bar3d' && (
         <>
-          <div className="absolute left-7 bottom-6 w-5 h-8 rounded-t bg-white/75" />
-          <div className="absolute left-[3.75rem] bottom-6 w-5 h-12 rounded-t bg-white/82" />
-          <div className="absolute left-[5.75rem] bottom-6 w-5 h-16 rounded-t bg-white/92" />
-          <div className="absolute right-8 bottom-5 text-[10px] font-medium text-white/90">GDP</div>
+          <div className="absolute left-7 bottom-6 w-5 h-8 rounded-t bg-blue-500/75" />
+          <div className="absolute left-[3.75rem] bottom-6 w-5 h-12 rounded-t bg-blue-500/82" />
+          <div className="absolute left-[5.75rem] bottom-6 w-5 h-16 rounded-t bg-blue-500/92" />
+          <div className="absolute right-8 bottom-5 text-[10px] font-medium text-slate-700">GDP</div>
         </>
       )}
 
-      <div className="absolute bottom-2 right-3 text-[10px] tracking-wide text-white/80 font-medium">DEMO PREVIEW</div>
+      <div className="absolute left-3 top-3 rounded-sm bg-white/90 px-2 py-1 text-[10px] font-medium text-slate-500 shadow-sm">天地图示意</div>
+      <div className={`absolute bottom-3 right-3 h-2.5 w-2.5 rounded-full ${accent} ring-2 ring-white`} />
+        </>
+      )}
+      <div className="absolute inset-0 flex translate-y-3 flex-col justify-end bg-gradient-to-t from-slate-950/82 via-slate-950/36 to-transparent p-5 opacity-0 transition-all duration-200 group-hover:translate-y-0 group-hover:opacity-100">
+        <div className="text-base font-semibold leading-6 text-white">{example.title}</div>
+        <div className="mt-2 text-sm leading-6 text-white/82 line-clamp-3">{example.desc}</div>
+      </div>
     </div>
   )
 }
@@ -190,46 +213,31 @@ export function HomePage() {
       </div>
 
       <div className="relative">
-        <header className="px-6 py-4 flex items-center justify-between max-w-6xl mx-auto">
+        <header className="flex h-16 items-center justify-between px-6 max-w-6xl mx-auto">
           <div className="flex items-center gap-3">
-            <img src="/tianditu-logo.png" alt="天地图" className="h-10 object-contain" />
+            <img src={appAsset('/tianditu-logo.png')} alt="天地图" className="h-9 object-contain" />
             <div className="w-px h-7 bg-gray-200" />
-            <img src="/tianditu-agent-logo.svg" alt="天地图开发智能体" className="h-9 sm:h-10 w-auto object-contain" />
+            <img src={appAsset('/tianditu-agent-logo.svg')} alt="天地图开发智能体" className="h-8 sm:h-9 w-auto object-contain" />
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={() => window.location.assign(docsUrl)}
-              className="px-4 py-2.5 rounded-xl text-sm font-medium border border-slate-200 bg-white text-slate-600 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50/60 transition-all duration-200"
+              className="h-11 px-6 rounded-[3px] text-sm font-medium border border-slate-200 bg-white text-slate-600 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50/60 transition-all duration-200"
             >
               使用文档
             </button>
             <button
               onClick={() => navigate('/gallery')}
-              className="px-4 py-2.5 rounded-xl text-sm font-medium border border-slate-200 bg-white text-slate-600 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50/60 transition-all duration-200"
+              className="h-11 px-6 rounded-[3px] text-sm font-medium border border-slate-200 bg-white text-slate-600 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50/60 transition-all duration-200"
             >
               公开样例
             </button>
             {isAuthenticated && (
-              <div className="hidden md:flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
-                <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100 font-semibold">
-                  {(session?.user?.displayName || session?.user?.loginName || 'U').slice(0, 1).toUpperCase()}
-                </span>
-                <span className="max-w-32 truncate font-medium">
-                  {session?.user?.displayName || session?.user?.loginName}
-                </span>
-              </div>
-            )}
-            {isAuthenticated && (
-              <button
-                onClick={() => openLogout('/')}
-                className="px-4 py-2.5 rounded-xl text-sm font-medium border border-slate-200 bg-white text-slate-600 hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50/60 transition-all duration-200"
-              >
-                退出登录
-              </button>
+              <UserMenu session={session} onLogout={() => openLogout('/')} />
             )}
             <button
               onClick={() => openWorkspace()}
-              className="group flex items-center gap-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white px-5 py-2.5 rounded-xl text-sm font-medium hover:shadow-lg hover:shadow-blue-500/25 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
+              className="group flex h-11 items-center gap-2 rounded-[3px] bg-[#647bd9] px-6 text-sm font-medium text-white hover:bg-[#8fa3e7] hover:shadow-lg hover:shadow-[#647bd9]/25 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
             >
               {authEnabled && !isAuthenticated ? '统一登录' : '开始使用'}
               <svg className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -259,30 +267,19 @@ export function HomePage() {
               <span className="text-xs text-slate-400">共 {exampleCards.length} 个</span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 gap-x-7 gap-y-8 sm:grid-cols-2 xl:grid-cols-3">
               {exampleCards.map((ex, i) => (
                 <button
                   key={ex.title}
                   onClick={() => handleExample(ex, i)}
-                  className="group relative bg-white/92 backdrop-blur-sm border border-gray-200/75 rounded-2xl p-4 hover:shadow-2xl hover:shadow-slate-900/[0.08] hover:border-blue-200 hover:-translate-y-0.5 transition-all duration-250 text-left overflow-hidden"
+                  className="group bg-white text-left overflow-hidden shadow-[0_12px_28px_rgba(15,23,42,0.10)] hover:shadow-[0_20px_42px_rgba(15,23,42,0.16)] hover:-translate-y-0.5 transition-all duration-250"
                   style={{ animationDelay: `${i * 35}ms` }}
                 >
-                  <div className={`absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r ${ex.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-250`} />
+                  <CardPreview example={ex} />
 
-                  <CardPreview variant={ex.preview} gradient={ex.gradient} />
-
-                  <div className="relative mt-4">
-                    <div className="mb-2 flex items-center justify-between gap-2">
-                      <span className="rounded-full bg-slate-100 text-slate-500 text-[11px] px-2 py-0.5 font-medium">
-                        {ex.category}
-                      </span>
-                      <div className={`w-10 h-10 ${ex.bgLight} rounded-xl flex items-center justify-center ${ex.iconColor}`}>
-                        {ex.icon}
-                      </div>
-                    </div>
-
-                    <div className="font-semibold text-slate-800 text-[18px] leading-6 mb-1.5 group-hover:text-slate-900">{ex.title}</div>
-                    <div className="text-[13px] text-slate-500 leading-relaxed min-h-[44px]">{ex.desc}</div>
+                  <div className="px-5 pb-5 pt-4">
+                    <div className="text-[18px] font-semibold leading-6 text-slate-900 line-clamp-1">{ex.title}</div>
+                    <div className="mt-2 min-h-[44px] text-[13px] leading-[22px] text-slate-500 line-clamp-2">{ex.desc}</div>
 
                     <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
                       <span className="text-sm font-medium text-blue-600">运行案例</span>

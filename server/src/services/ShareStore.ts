@@ -1,4 +1,4 @@
-import { createHash, randomUUID } from 'crypto'
+import { randomUUID } from 'crypto'
 import { access, copyFile, mkdir, readFile, stat, writeFile } from 'fs/promises'
 import { basename, extname, resolve } from 'path'
 import { isLikelyBlankThumbnailBuffer } from './ShareThumbnailRenderer.js'
@@ -25,8 +25,8 @@ export interface ShareRecord {
   lastViewedAt?: number
   createdAt: number
   updatedAt: number
-  manageTokenHash: string
   codeSizeBytes: number
+  creatorName?: string
 }
 
 export interface CreateShareInput {
@@ -35,17 +35,15 @@ export interface CreateShareInput {
   description?: string
   visibility?: ShareVisibility
   thumbnailBase64?: string
-}
-
-export interface UpdateShareInput {
-  title?: string
-  description?: string
-  visibility?: ShareVisibility
+  tiandituToken?: string
+  creatorName?: string
 }
 
 export interface ListPublicOptions {
   page: number
   pageSize: number
+  q?: string
+  sort?: 'viewCount' | 'createdAt'
 }
 
 export interface ListPublicResult {
@@ -59,6 +57,7 @@ export interface ShareStoreOptions {
   rootDir: string
   uploadDir: string
   tiandituToken?: string
+  publicBasePath?: string
   thumbnail?: {
     enabled?: boolean
     baseUrl?: string
@@ -71,13 +70,16 @@ export interface ShareStoreOptions {
 
 const INDEX_FILE_NAME = 'index.json'
 const SNAPSHOT_DIR_NAME = 'snapshots'
+const PUBLIC_SDK_VERSION = '20260522-restore-v5'
+
+function normalizePublicBasePath(value: string): string {
+  const trimmed = String(value || '').trim()
+  if (!trimmed || trimmed === '/') return ''
+  return `/${trimmed.replace(/^\/+|\/+$/g, '')}`
+}
 
 function nowTs() {
   return Date.now()
-}
-
-function hashToken(raw: string) {
-  return createHash('sha256').update(raw).digest('hex')
 }
 
 function normalizeVisibility(input?: string): ShareVisibility {
@@ -93,6 +95,11 @@ function sanitizeTitle(input?: string): string {
 function sanitizeDescription(input?: string): string {
   const raw = String(input || '').trim()
   return raw.slice(0, 240)
+}
+
+function sanitizeCreatorName(input?: string): string | undefined {
+  const raw = String(input || '').replace(/\s+/g, ' ').trim()
+  return raw ? raw.slice(0, 80) : undefined
 }
 
 const MAX_THUMBNAIL_IMAGE_BYTES = 6 * 1024 * 1024
@@ -180,6 +187,7 @@ export class ShareStore {
   private readonly snapshotsDir: string
   private readonly indexPath: string
   private readonly tiandituToken?: string
+  private readonly publicBasePath: string
 
   private ready = false
   private initPromise: Promise<void> | null = null
@@ -192,6 +200,7 @@ export class ShareStore {
     this.snapshotsDir = resolve(this.rootDir, SNAPSHOT_DIR_NAME)
     this.indexPath = resolve(this.rootDir, INDEX_FILE_NAME)
     this.tiandituToken = opts.tiandituToken
+    this.publicBasePath = normalizePublicBasePath(opts.publicBasePath || process.env.PUBLIC_SAMPLE_BASE_PATH || process.env.VITE_BASE_PATH || '/ai/dev/')
   }
 
   async init() {
@@ -250,17 +259,22 @@ export class ShareStore {
     return thumbnailRelativePath
   }
 
-  private normalizeHtml(rawHtml: string): string {
+  private normalizeHtml(rawHtml: string, _tiandituToken?: string): string {
     let html = String(rawHtml || '')
     if (!html.includes('<!DOCTYPE html>') && !html.includes('<html')) {
       html = `<!DOCTYPE html>\n<html><head><meta charset="utf-8"></head><body>${html}</body></html>`
     }
 
-    if (this.tiandituToken) {
-      html = html.replace(/\$\{TIANDITU_TOKEN\}/g, this.tiandituToken)
-      html = html.replace(/\b(?:your_tianditu_token_here|YOUR_TIANDITU_TOKEN|YOUR_TIANDITU_API_KEY|your_tianditu_api_key)\b/g, this.tiandituToken)
-      html = html.replace(/(api\.tianditu\.gov\.cn\/api\/v5\/js\?tk=)[^"'`\s&>]+/gi, `$1${this.tiandituToken}`)
-    }
+    const publicApiPrefix = `${this.publicBasePath}/api/public/tianditu/`
+    const publicSdkUrl = `${this.publicBasePath}/api/public/tianditu-js/v5?v=${PUBLIC_SDK_VERSION}`
+
+    html = html.replace(/https?:\/\/api\.tianditu\.gov\.cn\/api\/v5\/js(?:\?tk=[^"'`\s&>]*)?/gi, publicSdkUrl)
+    html = html.replace(/(["'`])\/(?:ai\/dev\/)?api\/public\/tianditu-js\/v5(?:\?[^"'`\s&>]*)?/gi, `$1${publicSdkUrl}`)
+    html = html.replace(/\$\{TIANDITU_TOKEN\}/g, '__TDT_PUBLIC_SAMPLE_TOKEN__')
+    html = html.replace(/\b(?:your_tianditu_token_here|YOUR_TIANDITU_TOKEN|YOUR_TIANDITU_API_KEY|your_tianditu_api_key)\b/g, '__TDT_PUBLIC_SAMPLE_TOKEN__')
+    html = html.replace(/((?:https?:\/\/)?[^"'`\s<>]*tianditu\.gov\.cn[^"'`\s<>]*[?&]tk=)[^"'`\s&<>]+/gi, '$1__TDT_PUBLIC_SAMPLE_TOKEN__')
+    html = html.replace(/(["'`])\/(?:ai\/dev\/)?api\/tianditu\//g, `$1${publicApiPrefix}`)
+    html = html.replace(/(["'`])https?:\/\/[^"'`]+\/(?:ai\/dev\/)?api\/tianditu\//g, `$1${publicApiPrefix}`)
 
     return html
   }
@@ -335,15 +349,7 @@ export class ShareStore {
     return { html: rewrittenHtml, assetFiles: savedAssets }
   }
 
-  private assertManageToken(item: ShareRecord, manageToken: string) {
-    if (!manageToken) throw new Error('缺少管理口令')
-    const hashed = hashToken(String(manageToken))
-    if (hashed !== item.manageTokenHash) {
-      throw new Error('管理口令无效')
-    }
-  }
-
-  async createShare(input: CreateShareInput): Promise<{ item: ShareRecord; manageToken: string }> {
+  async createShare(input: CreateShareInput): Promise<{ item: ShareRecord }> {
     await this.init()
 
     const rawCode = String(input.htmlCode || '').trim()
@@ -360,11 +366,12 @@ export class ShareStore {
       const id = randomUUID()
       const safeTitle = sanitizeTitle(input.title)
       const safeDescription = sanitizeDescription(input.description)
+      const creatorName = sanitizeCreatorName(input.creatorName)
       const visibility = normalizeVisibility(input.visibility)
       const snapshotDir = resolve(this.snapshotsDir, slug)
       await mkdir(snapshotDir, { recursive: true })
 
-      const normalizedHtml = this.normalizeHtml(rawCode)
+      const normalizedHtml = this.normalizeHtml(rawCode, input.tiandituToken)
       const rewritten = await this.rewriteUploadReferences(normalizedHtml, slug, snapshotDir)
       const uploadedThumbnail = decodeThumbnailBase64(input.thumbnailBase64)
 
@@ -394,7 +401,6 @@ export class ShareStore {
       }
 
       const htmlStat = await stat(htmlPath)
-      const manageToken = randomUUID().replace(/-/g, '') + randomUUID().replace(/-/g, '').slice(0, 12)
       const item: ShareRecord = {
         id,
         slug,
@@ -408,14 +414,14 @@ export class ShareStore {
         viewCount: 0,
         createdAt,
         updatedAt: createdAt,
-        manageTokenHash: hashToken(manageToken),
         codeSizeBytes: htmlStat.size,
+        creatorName,
       }
 
       this.indexData.items.unshift(item)
       await this.persistIndex()
 
-      return { item, manageToken }
+      return { item }
     })
   }
 
@@ -440,70 +446,31 @@ export class ShareStore {
     })
   }
 
-  async validateManageToken(slug: string, token?: string): Promise<boolean> {
-    await this.init()
-    if (!token) return false
-    const found = this.indexData.items.find((item) => item.slug === slug)
-    if (!found) return false
-    return hashToken(token) === found.manageTokenHash
-  }
-
-  async updateShare(slug: string, manageToken: string, patch: UpdateShareInput): Promise<ShareRecord> {
-    await this.init()
-    return this.runExclusive(async () => {
-      const idx = this.indexData.items.findIndex((item) => item.slug === slug)
-      if (idx < 0) throw new Error('分享不存在')
-      const target = this.indexData.items[idx]
-      this.assertManageToken(target, manageToken)
-      if (target.status !== 'active') throw new Error('分享已下架，无法修改')
-
-      const nextTitle = patch.title != null ? sanitizeTitle(patch.title) : target.title
-      const nextDescription = patch.description != null ? sanitizeDescription(patch.description) : target.description
-      const nextVisibility = patch.visibility != null ? normalizeVisibility(patch.visibility) : target.visibility
-
-      target.title = nextTitle
-      target.description = nextDescription
-      target.visibility = nextVisibility
-      target.updatedAt = nowTs()
-
-      // 仅 SVG 缩略图在更新标题/可见性时重绘，PNG 实拍图保持不变
-      if (target.thumbnailRelativePath.endsWith('.svg')) {
-        const thumbnailPath = resolve(this.snapshotsDir, target.thumbnailRelativePath)
-        const thumbnailSvg = buildThumbnailSvg(target.title, target.visibility, target.createdAt)
-        await writeFile(thumbnailPath, thumbnailSvg, 'utf-8')
-      }
-
-      await this.persistIndex()
-      return { ...target }
-    })
-  }
-
-  async removeShare(slug: string, manageToken: string): Promise<ShareRecord> {
-    await this.init()
-    return this.runExclusive(async () => {
-      const idx = this.indexData.items.findIndex((item) => item.slug === slug)
-      if (idx < 0) throw new Error('分享不存在')
-      const target = this.indexData.items[idx]
-      this.assertManageToken(target, manageToken)
-      if (target.status === 'removed') return { ...target }
-
-      target.status = 'removed'
-      target.visibility = 'unlisted'
-      target.updatedAt = nowTs()
-      await this.persistIndex()
-      return { ...target }
-    })
-  }
-
   async listPublic(options: ListPublicOptions): Promise<ListPublicResult> {
     await this.init()
 
     const page = Number.isFinite(options.page) && options.page > 0 ? Math.floor(options.page) : 1
     const pageSize = Number.isFinite(options.pageSize) && options.pageSize > 0 ? Math.min(Math.floor(options.pageSize), 60) : 24
 
+    const query = String(options.q || '').trim().toLowerCase()
+    const sort = options.sort === 'viewCount' ? 'viewCount' : 'createdAt'
+
     const all = this.indexData.items
       .filter((item) => item.status === 'active' && item.visibility === 'public')
-      .sort((a, b) => b.updatedAt - a.updatedAt)
+      .filter((item) => {
+        if (!query) return true
+        return [
+          item.title,
+          item.description,
+          item.creatorName || '',
+        ].some((text) => String(text || '').toLowerCase().includes(query))
+      })
+      .sort((a, b) => {
+        if (sort === 'viewCount') {
+          return (b.viewCount - a.viewCount) || (b.createdAt - a.createdAt)
+        }
+        return b.createdAt - a.createdAt
+      })
 
     const total = all.length
     const start = (page - 1) * pageSize

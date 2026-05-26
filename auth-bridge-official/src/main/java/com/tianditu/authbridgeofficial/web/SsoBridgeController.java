@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/sso")
+@RequestMapping({"/sso", "/ai/dev/sso"})
 public class SsoBridgeController {
   private final BridgeAuthProperties properties;
   private final CurrentTiandituUserService currentTiandituUserService;

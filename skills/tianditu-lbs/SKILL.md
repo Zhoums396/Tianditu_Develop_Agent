@@ -40,7 +40,7 @@ allowed-tools: Read Bash(node *)
 
 ## 关键约束
 
-1. 默认优先走当前项目代理：`/api/tianditu/*`
+1. 默认优先走当前项目代理：`/api/tianditu/*`。运行页面部署在子路径时，代码应优先用 `window.__TDT_API_URL__('/api/tianditu/...')` 构造地址，避免漏掉 `/ai/dev` 这类前缀。
 2. 对搜索 V2 来说，当前项目代理仍优先使用官方字段名与 `queryType` 语义：
    - 推荐直接传 `keyWord`、`queryType`、`level`、`mapBound`、`pointLonlat`、`queryRadius`、`polygon`、`specify`、`dataTypes`、`show`、`start`、`count`
    - `type=nearby/view/polygon/category/stats` 这类代理别名只作兼容兜底，不作为第一选择

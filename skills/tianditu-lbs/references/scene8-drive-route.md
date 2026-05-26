@@ -42,7 +42,7 @@ GET /api/tianditu/drive?origLng=116.35506&origLat=39.92277&destLng=116.39751&des
 ## 官方端点
 
 - `http://api.tianditu.gov.cn/drive?postStr=...&type=search`
-- 默认 key：`4043dde46add842282bacc412299311d`
+- 默认 key：`${TIANDITU_TOKEN}`
 
 ## 必填参数
 
@@ -77,7 +77,7 @@ GET /api/tianditu/drive?origLng=116.35506&origLat=39.92277&destLng=116.39751&des
 ## 最小请求模板
 
 ```bash
-curl -s "http://api.tianditu.gov.cn/drive?postStr={\"orig\":\"116.35506,39.92277\",\"dest\":\"116.39751,39.90854\",\"style\":\"0\"}&type=search&tk=4043dde46add842282bacc412299311d"
+curl -s "http://api.tianditu.gov.cn/drive?postStr={\"orig\":\"116.35506,39.92277\",\"dest\":\"116.39751,39.90854\",\"style\":\"0\"}&type=search&tk=${TIANDITU_TOKEN}"
 ```
 
 ## 完整示例
@@ -85,19 +85,19 @@ curl -s "http://api.tianditu.gov.cn/drive?postStr={\"orig\":\"116.35506,39.92277
 ### 示例 1：最快路线
 
 ```bash
-curl -s "http://api.tianditu.gov.cn/drive?postStr={\"orig\":\"116.35506,39.92277\",\"dest\":\"116.39751,39.90854\",\"style\":\"0\"}&type=search&tk=4043dde46add842282bacc412299311d"
+curl -s "http://api.tianditu.gov.cn/drive?postStr={\"orig\":\"116.35506,39.92277\",\"dest\":\"116.39751,39.90854\",\"style\":\"0\"}&type=search&tk=${TIANDITU_TOKEN}"
 ```
 
 ### 示例 2：带途经点
 
 ```bash
-curl -s "http://api.tianditu.gov.cn/drive?postStr={\"orig\":\"116.35506,39.92277\",\"dest\":\"116.39751,39.90854\",\"mid\":\"116.36506,39.91277;116.37506,39.92077\",\"style\":\"0\"}&type=search&tk=4043dde46add842282bacc412299311d"
+curl -s "http://api.tianditu.gov.cn/drive?postStr={\"orig\":\"116.35506,39.92277\",\"dest\":\"116.39751,39.90854\",\"mid\":\"116.36506,39.91277;116.37506,39.92077\",\"style\":\"0\"}&type=search&tk=${TIANDITU_TOKEN}"
 ```
 
 ### 示例 3：避开高速
 
 ```bash
-curl -s "http://api.tianditu.gov.cn/drive?postStr={\"orig\":\"116.35506,39.92277\",\"dest\":\"116.39751,39.90854\",\"style\":\"2\"}&type=search&tk=4043dde46add842282bacc412299311d"
+curl -s "http://api.tianditu.gov.cn/drive?postStr={\"orig\":\"116.35506,39.92277\",\"dest\":\"116.39751,39.90854\",\"style\":\"2\"}&type=search&tk=${TIANDITU_TOKEN}"
 ```
 
 ## 返回结构
@@ -306,7 +306,7 @@ fetch('/api/tianditu/drive?...')
 
 - 端点：/drive
 - type：search
-- 默认 key：4043dde46add842282bacc412299311d
+- 默认 key：${TIANDITU_TOKEN}
 - 坐标顺序：经度,纬度
 
 注意：

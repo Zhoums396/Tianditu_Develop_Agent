@@ -168,7 +168,7 @@ select:disabled,
 }
 
 .soft-surface:hover {
-  transform: translate3d(0, -1px, 0) scale(1.003);
+  transform: none;
 }
 
 .soft-pop {
@@ -182,11 +182,11 @@ select:disabled,
 }
 
 .soft-pop:hover {
-  transform: translate3d(0, -1px, 0) scale(1.015);
+  transform: none;
 }
 
 .soft-pop:active {
-  transform: translate3d(0, 0, 0) scale(0.985);
+  transform: none;
 }
 
 .soft-panel {
@@ -199,7 +199,7 @@ select:disabled,
 }
 
 .soft-panel:hover {
-  transform: translate3d(0, -1px, 0);
+  transform: none;
 }
 
 /* ===== 全局滚动条 — 极细无感 ===== */
@@ -370,7 +370,7 @@ textarea:focus {
   box-shadow: none;
 }
 
-/* ===== 视觉巡检遮罩（Atlas 风格） ===== */
+/* ===== 视觉检查遮罩（Atlas 风格） ===== */
 @keyframes visual-grid-drift {
   0% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.56; }
   50% { transform: translate3d(8px, -6px, 0) scale(1.02); opacity: 0.74; }

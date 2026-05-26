@@ -8,6 +8,9 @@ import authRouter from './routes/auth.js'
 import chatRouter from './routes/chat.js'
 import uploadRouter from './routes/upload.js'
 import tiandituRouter from './routes/tianditu.js'
+import tiandituTokenRouter from './routes/tiandituToken.js'
+import tiandituPreviewRouter from './routes/tiandituPreview.js'
+import publicTiandituRouter from './routes/publicTianditu.js'
 import shareRouter from './routes/share.js'
 import runDossiersRouter from './routes/runDossiers.js'
 import { mkdirSync } from 'fs'
@@ -48,6 +51,9 @@ app.use('/share-assets', express.static(resolve(config.share.dir, 'snapshots'), 
 
 // 路由
 app.use('/api/auth', authRouter)
+app.use('/api/public', publicTiandituRouter)
+app.use('/api/tianditu-token', requireAuth, tiandituTokenRouter)
+app.use('/api/tianditu-preview', requireAuth, tiandituPreviewRouter)
 app.use('/api/chat', requireAuth, chatRouter)
 app.use('/api/upload', requireAuth, uploadRouter)
 app.use('/api/tianditu', requireAuth, tiandituRouter)

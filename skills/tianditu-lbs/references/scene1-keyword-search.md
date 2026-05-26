@@ -23,7 +23,7 @@
 ## 官方端点
 
 - 搜索端点：`http://api.tianditu.gov.cn/v2/search`
-- 默认 key：`4043dde46add842282bacc412299311d`
+- 默认 key：`${TIANDITU_TOKEN}`
 
 ## 当前项目代理推荐写法
 
@@ -68,7 +68,7 @@ GET /api/tianditu/search?keyWord=北京大学&queryType=1&level=12&mapBound=116.
 ## 最小请求模板
 
 ```bash
-curl -s "http://api.tianditu.gov.cn/v2/search?postStr={\"keyWord\":\"北京大学\",\"level\":5,\"mapBound\":\"73,3,135,54\",\"queryType\":1,\"start\":0,\"count\":10}&type=query&tk=4043dde46add842282bacc412299311d"
+curl -s "http://api.tianditu.gov.cn/v2/search?postStr={\"keyWord\":\"北京大学\",\"level\":5,\"mapBound\":\"73,3,135,54\",\"queryType\":1,\"start\":0,\"count\":10}&type=query&tk=${TIANDITU_TOKEN}"
 ```
 
 ## 完整示例
@@ -76,19 +76,19 @@ curl -s "http://api.tianditu.gov.cn/v2/search?postStr={\"keyWord\":\"北京大�
 ### 示例 1：搜明确地点
 
 ```bash
-curl -s "http://api.tianditu.gov.cn/v2/search?postStr={\"keyWord\":\"北京大学\",\"level\":5,\"mapBound\":\"73,3,135,54\",\"queryType\":1,\"start\":0,\"count\":10,\"show\":2}&type=query&tk=4043dde46add842282bacc412299311d"
+curl -s "http://api.tianditu.gov.cn/v2/search?postStr={\"keyWord\":\"北京大学\",\"level\":5,\"mapBound\":\"73,3,135,54\",\"queryType\":1,\"start\":0,\"count\":10,\"show\":2}&type=query&tk=${TIANDITU_TOKEN}"
 ```
 
 ### 示例 2：搜明确类别
 
 ```bash
-curl -s "http://api.tianditu.gov.cn/v2/search?postStr={\"keyWord\":\"加油站\",\"level\":5,\"mapBound\":\"73,3,135,54\",\"queryType\":1,\"start\":0,\"count\":10}&type=query&tk=4043dde46add842282bacc412299311d"
+curl -s "http://api.tianditu.gov.cn/v2/search?postStr={\"keyWord\":\"加油站\",\"level\":5,\"mapBound\":\"73,3,135,54\",\"queryType\":1,\"start\":0,\"count\":10}&type=query&tk=${TIANDITU_TOKEN}"
 ```
 
 ### 示例 3：限定行政区搜关键词
 
 ```bash
-curl -s "http://api.tianditu.gov.cn/v2/search?postStr={\"keyWord\":\"博物馆\",\"level\":10,\"mapBound\":\"115.7,39.4,117.4,41.6\",\"queryType\":1,\"specify\":\"156110000\",\"start\":0,\"count\":10}&type=query&tk=4043dde46add842282bacc412299311d"
+curl -s "http://api.tianditu.gov.cn/v2/search?postStr={\"keyWord\":\"博物馆\",\"level\":10,\"mapBound\":\"115.7,39.4,117.4,41.6\",\"queryType\":1,\"specify\":\"156110000\",\"start\":0,\"count\":10}&type=query&tk=${TIANDITU_TOKEN}"
 ```
 
 ## 返回结构
@@ -219,10 +219,10 @@ curl -s "http://api.tianditu.gov.cn/v2/search?postStr={\"keyWord\":\"博物馆\"
 
 - 端点：/v2/search
 - queryType：1
-- 默认 key：4043dde46add842282bacc412299311d
+- 默认 key：${TIANDITU_TOKEN}
 
 可直接请求：
-curl -s "http://api.tianditu.gov.cn/v2/search?postStr={...}&type=query&tk=4043dde46add842282bacc412299311d"
+curl -s "http://api.tianditu.gov.cn/v2/search?postStr={...}&type=query&tk=${TIANDITU_TOKEN}"
 
 结果重点查看：
 - resultType

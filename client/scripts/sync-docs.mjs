@@ -13,6 +13,10 @@ const targetDir = resolve(clientDir, 'public', 'docs')
 execSync('npm run build', {
   cwd: docsDir,
   stdio: 'inherit',
+  env: {
+    ...process.env,
+    DOCS_BASE_PATH: process.env.DOCS_BASE_PATH ?? '/ai/dev/docs',
+  },
 })
 
 if (!existsSync(docsOutputDir)) {

@@ -5,18 +5,16 @@ import { useCodeRunner } from '../../hooks/useCodeRunner'
 import { visualQaApi } from '../../services/visualQaApi'
 import { runDossierApi } from '../../services/runDossierApi'
 import html2canvas from 'html2canvas'
-import { DEFAULT_TIANDITU_TOKEN } from '../../constants/tianditu'
 import { isLikelyBlankThumbnailBase64 } from '../../utils/isLikelyBlankThumbnail'
 import { installAppFullscreenEnhancer } from '../../utils/appFullscreenEnhancer'
-import { hasActiveFullscreen, requestElementFullscreen, exitDocumentFullscreen } from '../../utils/fullscreen'
-import { ViewportModeControls } from './ViewportModeControls'
+import { useTiandituTokenStore } from '../../stores/useTiandituTokenStore'
 
 interface MapPreviewProps {
   pageFilled?: boolean
   onTogglePageFill?: () => void
 }
 
-/** 默认地图 HTML — 展示中国全景，indigo 主题风格 */
+/** 默认地图 HTML — 展示天安门附近 3D 倾斜视角 */
 const DEFAULT_MAP_HTML = `<!DOCTYPE html>
 <html>
 <head>
@@ -26,15 +24,16 @@ const DEFAULT_MAP_HTML = `<!DOCTYPE html>
   html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden}
   #map{width:100%;height:100%}
 </style>
-<script src="https://api.tianditu.gov.cn/api/v5/js?tk=${DEFAULT_TIANDITU_TOKEN}"></script>
+<script src="https://api.tianditu.gov.cn/api/v5/js?tk=${'${TIANDITU_TOKEN}'}"></script>
 </head>
 <body>
 <div id="map"></div>
 <script>
   var map = new TMapGL.Map('map', {
-    center: [108.9, 34.2],
-    zoom: 4.5,
-    pitch: 0,
+    center: [116.3975, 39.9087],
+    zoom: 16.4,
+    pitch: 58,
+    bearing: 0,
     doubleClickZoom: true,
     scrollZoom: true,
     touchZoomRotate: true
@@ -46,12 +45,19 @@ const DEFAULT_MAP_HTML = `<!DOCTYPE html>
 </body>
 </html>`
 
+const DEFAULT_PREVIEW_TIANDITU_TOKEN = '4043dde46add842282bacc412299311d'
+
 const MIN_CAPTURE_BASE64_LEN = 800
 const VISUAL_LOADING_TEXT_RE = /加载中|正在加载|请稍候|请稍等|loading|initializing|rendering|fetching|waiting/i
 const MAX_VISUAL_CAPTURE_ATTEMPTS = 8
 const VISUAL_CAPTURE_RETRY_WAIT_MS = 900
 const VISUAL_DEFERRED_RETRY_DELAY_MS = 3000
 const MAX_VISUAL_DEFERRED_RETRIES = 1
+const VISUAL_RENDER_MIN_WAIT_MS = 1800
+const VISUAL_RENDER_QUIET_MS = 1400
+const VISUAL_RENDER_MAX_WAIT_MS = 12000
+const VISUAL_RENDER_POLL_MS = 250
+const VISUAL_RENDER_STABLE_SAMPLES = 3
 
 function dataUrlToBase64(dataUrl: string): string | null {
   const raw = String(dataUrl || '')
@@ -77,6 +83,108 @@ function extractVisualText(doc: Document | null | undefined): string {
 
 function isLikelyLoadingText(text: string): boolean {
   return VISUAL_LOADING_TEXT_RE.test(String(text || ''))
+}
+
+function getRenderState(win: Window | null | undefined): {
+  pendingRequests: number
+  lastNetworkActivityAt: number
+  lastDomMutationAt: number
+} {
+  const raw = (win as any)?.__codexRenderState || {}
+  const now = Date.now()
+  return {
+    pendingRequests: Math.max(0, Number(raw.pendingRequests || 0)),
+    lastNetworkActivityAt: Number(raw.lastNetworkActivityAt || now),
+    lastDomMutationAt: Number(raw.lastDomMutationAt || 0),
+  }
+}
+
+function buildRenderSignature(doc: Document | null | undefined): string {
+  if (!doc) return 'no-doc'
+  const canvases = Array.from(doc.querySelectorAll('canvas')).map((canvas) => {
+    const rect = canvas.getBoundingClientRect?.()
+    return [
+      Math.round(Number(canvas.width || 0)),
+      Math.round(Number(canvas.height || 0)),
+      Math.round(Number(rect?.width || 0)),
+      Math.round(Number(rect?.height || 0)),
+    ].join('x')
+  })
+  const images = Array.from(doc.images || []).map((img) => [
+    img.complete ? '1' : '0',
+    Math.round(Number(img.naturalWidth || 0)),
+    Math.round(Number(img.naturalHeight || 0)),
+  ].join('x'))
+  const text = extractVisualText(doc)
+  return [
+    doc.readyState,
+    canvases.join('|'),
+    images.join('|'),
+    text.length,
+    isLikelyLoadingText(text) ? 'loading' : 'ready',
+  ].join('::')
+}
+
+async function waitForIframeRenderSettled(iframe: HTMLIFrameElement | null): Promise<{
+  settled: boolean
+  waitMs: number
+  pendingRequests: number
+  stableSamples: number
+  loadingHintDetected: boolean
+}> {
+  const startedAt = Date.now()
+  let stableSamples = 0
+  let previousSignature = ''
+  let loadingHintDetected = false
+  let lastPendingRequests = 0
+
+  while (Date.now() - startedAt < VISUAL_RENDER_MAX_WAIT_MS) {
+    const win = iframe?.contentWindow
+    const doc = iframe?.contentDocument
+    const now = Date.now()
+    const state = getRenderState(win)
+    const visibleText = extractVisualText(doc)
+    const loadingNow = isLikelyLoadingText(visibleText)
+    const signature = buildRenderSignature(doc)
+    if (loadingNow) loadingHintDetected = true
+    lastPendingRequests = state.pendingRequests
+
+    stableSamples = signature === previousSignature ? stableSamples + 1 : 1
+    previousSignature = signature
+
+    const elapsed = now - startedAt
+    const networkQuietFor = now - state.lastNetworkActivityAt
+    const domQuietFor = state.lastDomMutationAt > 0 ? now - state.lastDomMutationAt : Number.POSITIVE_INFINITY
+    const documentReady = !doc || doc.readyState === 'complete' || doc.readyState === 'interactive'
+    const renderSettled =
+      elapsed >= VISUAL_RENDER_MIN_WAIT_MS
+      && documentReady
+      && state.pendingRequests === 0
+      && networkQuietFor >= VISUAL_RENDER_QUIET_MS
+      && domQuietFor >= 500
+      && stableSamples >= VISUAL_RENDER_STABLE_SAMPLES
+      && !loadingNow
+
+    if (renderSettled) {
+      return {
+        settled: true,
+        waitMs: elapsed,
+        pendingRequests: state.pendingRequests,
+        stableSamples,
+        loadingHintDetected,
+      }
+    }
+
+    await sleep(VISUAL_RENDER_POLL_MS)
+  }
+
+  return {
+    settled: false,
+    waitMs: Date.now() - startedAt,
+    pendingRequests: lastPendingRequests,
+    stableSamples,
+    loadingHintDetected: true,
+  }
 }
 
 function pickLargestCanvas(doc: Document): { canvas: HTMLCanvasElement | null; count: number; maxArea: number } {
@@ -287,6 +395,9 @@ async function captureVisualInspectionCandidate(iframe: HTMLIFrameElement | null
     loadingHintDetected?: boolean
     captureAttempts?: number
     captureFailed?: boolean
+    renderWaitMs?: number
+    renderSettled?: boolean
+    pendingRequests?: number
   }
 }> {
   let loadingHintDetected = false
@@ -301,7 +412,13 @@ async function captureVisualInspectionCandidate(iframe: HTMLIFrameElement | null
     loadingHintDetected?: boolean
     captureAttempts?: number
     captureFailed?: boolean
+    renderWaitMs?: number
+    renderSettled?: boolean
+    pendingRequests?: number
   } = {}
+
+  const readiness = await waitForIframeRenderSettled(iframe)
+  loadingHintDetected = readiness.loadingHintDetected || !readiness.settled
 
   for (let attempt = 1; attempt <= MAX_VISUAL_CAPTURE_ATTEMPTS; attempt += 1) {
     const doc = iframe?.contentDocument
@@ -327,6 +444,9 @@ async function captureVisualInspectionCandidate(iframe: HTMLIFrameElement | null
         blankLikely,
         loadingHintDetected,
         captureAttempts: attempt,
+        renderWaitMs: readiness.waitMs,
+        renderSettled: readiness.settled,
+        pendingRequests: readiness.pendingRequests,
       }
 
       const shouldRetry = attempt < MAX_VISUAL_CAPTURE_ATTEMPTS && (loadingNow || blankLikely)
@@ -344,6 +464,9 @@ async function captureVisualInspectionCandidate(iframe: HTMLIFrameElement | null
         loadingHintDetected,
         captureAttempts: attempt,
         captureFailed: true,
+        renderWaitMs: readiness.waitMs,
+        renderSettled: readiness.settled,
+        pendingRequests: readiness.pendingRequests,
       }
     }
 
@@ -380,10 +503,10 @@ export function MapPreview(props: MapPreviewProps) {
     visualFixRetryCount,
     lastVisualCheckedCodeHash,
   } = useMapStore()
+  const { status: tokenStatus, hasToken, token: tiandituToken, refresh: refreshToken } = useTiandituTokenStore()
   const { iframeRef, run, activeRunIdRef } = useCodeRunner()
   const shellRef = useRef<HTMLDivElement | null>(null)
   const [showError, setShowError] = useState(true)
-  const [fullscreenActive, setFullscreenActive] = useState(false)
   const fixTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const visualTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const visualRetryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -403,6 +526,10 @@ export function MapPreview(props: MapPreviewProps) {
   const renderCode = previewCode || currentCode
   const previewing = Boolean(previewCode && codeStreaming)
   const pageFilled = Boolean(props.pageFilled)
+
+  useEffect(() => {
+    if (tokenStatus === 'idle') void refreshToken().catch(() => {})
+  }, [tokenStatus, refreshToken])
 
   const hashCode = (text: string) => {
     let hash = 2166136261
@@ -439,15 +566,22 @@ export function MapPreview(props: MapPreviewProps) {
 
   // 加载默认地图或用户代码
   useEffect(() => {
+    if (!hasToken || !tiandituToken) {
+      if (!defaultLoaded.current) {
+        run(DEFAULT_MAP_HTML.replace(/\$\{TIANDITU_TOKEN\}/g, DEFAULT_PREVIEW_TIANDITU_TOKEN))
+        defaultLoaded.current = true
+      }
+      return
+    }
     if (renderCode) {
       run(renderCode)
       defaultLoaded.current = false
     } else if (!defaultLoaded.current) {
       // 没有用户代码时显示默认地图（同样注入错误捕获脚本）
-      run(DEFAULT_MAP_HTML)
+      run(DEFAULT_MAP_HTML.replace(/\$\{TIANDITU_TOKEN\}/g, tiandituToken))
       defaultLoaded.current = true
     }
-  }, [renderCode, run, iframeRef])
+  }, [renderCode, run, iframeRef, hasToken, tiandituToken])
 
   // 监听 iframe 错误
   useEffect(() => {
@@ -530,27 +664,8 @@ export function MapPreview(props: MapPreviewProps) {
   }, [pageFilled])
 
   useEffect(() => {
-    const syncFullscreenState = () => {
-      setFullscreenActive(hasActiveFullscreen(document))
-    }
-    syncFullscreenState()
-    document.addEventListener('fullscreenchange', syncFullscreenState)
-    document.addEventListener('webkitfullscreenchange', syncFullscreenState as EventListener)
-    return () => {
-      document.removeEventListener('fullscreenchange', syncFullscreenState)
-      document.removeEventListener('webkitfullscreenchange', syncFullscreenState as EventListener)
-    }
-  }, [])
-
-  useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return
-
-      if (hasActiveFullscreen(document)) {
-        event.preventDefault()
-        void exitDocumentFullscreen(document)
-        return
-      }
 
       if (pageFilled) {
         event.preventDefault()
@@ -581,18 +696,6 @@ export function MapPreview(props: MapPreviewProps) {
       cleanupFrameWindow()
     }
   }, [iframeRef, pageFilled, props.onTogglePageFill])
-
-  const togglePageFill = () => {
-    props.onTogglePageFill?.()
-  }
-
-  const toggleSystemFullscreen = () => {
-    if (hasActiveFullscreen(document)) {
-      void exitDocumentFullscreen(document)
-      return
-    }
-    void requestElementFullscreen(shellRef.current)
-  }
 
   // 错误出现时自动触发修复（延迟 1.5s，避免瞬间错误）
   useEffect(() => {
@@ -678,7 +781,7 @@ export function MapPreview(props: MapPreviewProps) {
     }
   }, [currentCode, execError, executing, fixing, iframeRef, previewing])
 
-  // 渲染稳定后自动触发视觉巡检
+    // 渲染稳定后自动触发视觉检查
   useEffect(() => {
     deferredVisualRetryRef.current = { codeHash: '', count: 0 }
     if (!visualInFlightRef.current) {
@@ -750,7 +853,7 @@ export function MapPreview(props: MapPreviewProps) {
         if (result.status === 'unavailable') {
           if (captureMeta.loadingHintDetected && scheduleDeferredVisualRetry(codeHash)) {
             useChatStore.getState().addAssistantMessage([
-              '视觉巡检结果：暂缓',
+              '视觉检查结果：暂缓',
               `诊断：${result.diagnosis}`,
               `页面仍处于加载阶段，${Math.round(VISUAL_DEFERRED_RETRY_DELAY_MS / 1000)} 秒后自动重试一次。`,
             ].join('\n'))
@@ -758,7 +861,7 @@ export function MapPreview(props: MapPreviewProps) {
           }
           useMapStore.getState().markVisualChecked(codeHash)
           useChatStore.getState().addAssistantMessage([
-            '视觉巡检结果：不可用',
+            '视觉检查结果：不可用',
             `诊断：${result.diagnosis}`,
             '本轮不会触发自动补修。',
           ].join('\n'))
@@ -768,10 +871,9 @@ export function MapPreview(props: MapPreviewProps) {
         if (!result.anomalous) {
           useMapStore.getState().markVisualChecked(codeHash)
           useChatStore.getState().addAssistantMessage([
-            '视觉巡检结果：通过',
+            '视觉检查结果：通过',
             `结论：${result.summary}`,
             `说明：${result.diagnosis}`,
-            `结论把握度：${Math.round((result.confidence || 0) * 100)}%`,
           ].join('\n'))
           return
         }
@@ -779,20 +881,20 @@ export function MapPreview(props: MapPreviewProps) {
         if (!result.shouldRepair) {
           useMapStore.getState().markVisualChecked(codeHash)
           useChatStore.getState().addAssistantMessage([
-            `视觉巡检结果：发现异常（${result.severity}）`,
+            `视觉检查结果：发现异常（${result.severity}）`,
             `结论：${result.summary}`,
             `诊断：${result.diagnosis}`,
-            'AI 判定当前无需触发自动补修。',
+            '当前无需触发自动补修。',
           ].join('\n'))
           return
         }
 
         useMapStore.getState().markVisualChecked(codeHash)
         useChatStore.getState().addAssistantMessage([
-          `视觉巡检结果：发现异常（${result.severity}）`,
+          `视觉检查结果：发现异常（${result.severity}）`,
           `结论：${result.summary}`,
           `诊断：${result.diagnosis}`,
-          'AI 判定需要自动补修，系统将触发视觉回灌补修。',
+          '系统将触发视觉回灌补修。',
         ].join('\n'))
 
         const retryState = useMapStore.getState()
@@ -802,7 +904,7 @@ export function MapPreview(props: MapPreviewProps) {
         }
 
         const repairError = [
-          `[视觉巡检异常] 严重级别: ${result.severity}`,
+          `[视觉检查异常] 严重级别: ${result.severity}`,
           `结论: ${result.summary}`,
           `诊断: ${result.diagnosis}`,
           `修复建议: ${result.repairHint}`,
@@ -812,10 +914,10 @@ export function MapPreview(props: MapPreviewProps) {
         await useChatStore.getState().autoFixMapError({
           source: 'visual',
           overrideError: repairError,
-          userInputHint: '请根据视觉巡检结果做最小改动修复，优先修复渲染异常并保持现有布局与功能。',
+          userInputHint: '请根据视觉检查结果做最小改动修复，优先修复渲染异常并保持现有布局与功能。',
         })
       } catch (err: any) {
-        useChatStore.getState().addAssistantMessage(`视觉巡检执行失败：${err?.message || '未知错误'}`)
+        useChatStore.getState().addAssistantMessage(`视觉检查执行失败：${err?.message || '未知错误'}`)
       } finally {
         useMapStore.getState().setVisualChecking(false)
         visualInFlightRef.current = false
@@ -895,14 +997,6 @@ export function MapPreview(props: MapPreviewProps) {
         title="地图预览"
       />
 
-      <ViewportModeControls
-        pageFilled={pageFilled}
-        fullscreenActive={fullscreenActive}
-        onTogglePageFill={togglePageFill}
-        onToggleFullscreen={toggleSystemFullscreen}
-        className="absolute right-3 bottom-3 z-20"
-      />
-
       {/* 渲染中指示器 */}
       {executing && (
         <div className="absolute top-3 right-28 animate-fade-in">
@@ -913,7 +1007,7 @@ export function MapPreview(props: MapPreviewProps) {
         </div>
       )}
 
-      {/* 视觉巡检阻塞层（按方案要求前台阻塞） */}
+      {/* 视觉检查阻塞层（按方案要求前台阻塞） */}
       {visualChecking && !fixing && (
         <div className="visual-inspect-overlay absolute inset-0 z-[9] pointer-events-auto">
           <div className="visual-inspect-haze" />
@@ -932,7 +1026,7 @@ export function MapPreview(props: MapPreviewProps) {
 
           <div className="visual-inspect-center">
             <div className="visual-inspect-chip">
-              <div className="visual-inspect-chip-title">AI视觉巡检中</div>
+              <div className="visual-inspect-chip-title">视觉检查中</div>
               <div className="visual-inspect-chip-subtitle">正在采样地图画面并进行一致性分析</div>
               <div className="visual-inspect-progress" />
             </div>
@@ -950,12 +1044,12 @@ export function MapPreview(props: MapPreviewProps) {
         </div>
       )}
 
-      {/* 视觉巡检中指示器（前台阻塞） */}
+      {/* 视觉检查中指示器（前台阻塞） */}
       {visualChecking && !fixing && (
         <div className="absolute top-3 right-28 animate-fade-in z-10">
           <div className="flex items-center gap-2 bg-slate-950/70 backdrop-blur-xl shadow-lg shadow-indigo-900/30 border border-indigo-300/20 text-indigo-100 text-xs font-medium px-3 py-2 rounded-xl soft-surface">
             <div className="w-3.5 h-3.5 border-2 border-violet-200 border-t-violet-500 rounded-full animate-spin" />
-            正在进行AI视觉巡检...
+            正在进行视觉检查...
           </div>
         </div>
       )}

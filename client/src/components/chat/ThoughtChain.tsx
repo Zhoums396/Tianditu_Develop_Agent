@@ -141,8 +141,8 @@ export function ThoughtChain({ items, streaming }: { items: ThoughtChainItem[]; 
   const hiddenCount = items.length - rows.length
 
   return (
-    <details open={streaming ? true : undefined} className="mb-2 rounded-xl border border-gray-200/80 bg-gray-50/70 overflow-hidden soft-panel">
-      <summary className="list-none cursor-pointer select-none px-3 py-2.5 flex items-center justify-between gap-2 hover:bg-gray-50 soft-pop">
+    <details open={streaming ? true : undefined} className="mb-2 rounded-xl border border-gray-200/80 bg-gray-50/70 overflow-hidden transition-colors">
+      <summary className="list-none cursor-pointer select-none px-3 py-2.5 flex items-center justify-between gap-2 transition-colors hover:bg-gray-50">
         <div className="flex items-center gap-2 min-w-0">
           <span className="w-5 h-5 rounded-md bg-blue-50 text-blue-500 flex items-center justify-center shrink-0">
             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -203,7 +203,7 @@ export function ThoughtChain({ items, streaming }: { items: ThoughtChainItem[]; 
             return (
               <div
                 key={row.key}
-                className="bg-white border border-gray-200/80 rounded-lg px-2.5 py-2 flex items-start justify-between gap-3 soft-panel"
+                className="bg-white border border-gray-200/80 rounded-lg px-2.5 py-2 flex items-start justify-between gap-3"
               >
                 {body}
               </div>
@@ -214,9 +214,9 @@ export function ThoughtChain({ items, streaming }: { items: ThoughtChainItem[]; 
             <details
               key={row.key}
               open={row.status === 'running' ? true : undefined}
-              className="bg-white border border-gray-200/80 rounded-lg overflow-hidden soft-panel"
+              className="bg-white border border-gray-200/80 rounded-lg overflow-hidden"
             >
-              <summary className="list-none cursor-pointer px-2.5 py-2 flex items-start justify-between gap-3 hover:bg-gray-50/60 soft-pop">
+              <summary className="list-none cursor-pointer px-2.5 py-2 flex items-start justify-between gap-3 transition-colors hover:bg-gray-50/60">
                 {body}
               </summary>
               <div className="border-t border-gray-100 px-2.5 py-2 space-y-1.5 bg-slate-50/55">

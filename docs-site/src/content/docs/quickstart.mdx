@@ -17,7 +17,7 @@ import MediaFrame from '../../components/MediaFrame.astro'
     },
     {
       label: '开始前准备',
-      value: '一句清晰的页面需求，最好能说明主题、布局和希望出现的内容。',
+      value: '一句清晰的页面需求，以及一个已经在天地图控制台创建好的应用密钥 tk。',
     },
     {
       label: '预计时间',
@@ -34,8 +34,24 @@ import MediaFrame from '../../components/MediaFrame.astro'
 
 <MediaFrame
   kind="image"
-  title="工作区界面截图"
-  note="建议用真实截图标出聊天区、地图预览区、代码区和分享入口，让新人第一次就能对界面建立空间认知。"
+  src="/ai/dev/docs/images/ai/dev/docs/user-doc-05-workspace-interface.png"
+  title="图5：工作区界面"
+  note="左侧是需求输入、执行过程和继续追问区域，右侧是地图预览区。没有 tk 时，输入区会先提示配置天地图应用密钥。"
+/>
+
+## 开始前先配置 tk
+
+平台不再提供默认天地图应用密钥。第一次生成地图前，需要使用你自己的天地图 tk；如果还没有，可以在输入弹窗里点击“没有 tk？去申请”跳转到天地图官网创建。
+
+<MediaFrame
+  kind="image"
+  src="/ai/dev/docs/images/ai/dev/docs/user-doc-06-tk-modal.png"
+  title="图6：设置天地图 tk"
+  note="输入 tk 后系统会先校验有效性，校验通过才会保存。后续生成、预览、POI 搜索、路线规划等能力都会使用这个已保存 tk。"
+  bullets={[
+    '申请入口：https://oauth.tianditu.gov.cn/login?service=https%3A%2F%2Fwww.tianditu.gov.cn%2Fgateway%2Flogin%2Flogin%3Furl%3Dhttps%253A%252F%252Fwww.tianditu.gov.cn%252F',
+    '如果校验失败，先确认 tk 是否复制完整、应用状态是否可用。',
+  ]}
 />
 
 ## 最短操作路径
@@ -44,9 +60,13 @@ import MediaFrame from '../../components/MediaFrame.astro'
 
 1. 进入工作区。
 
-   通常从首页的“开始使用”进入，先确认你已经能看到聊天区、地图预览区和代码区。
+   通常从首页的“开始使用”进入，或者点击首页案例直接带着示例需求进入。
 
-2. 描述你想要的页面。
+2. 配置天地图 tk。
+
+   点击输入区里的“输入天地图 tk”，在弹窗中粘贴你的应用密钥，并等待“校验并保存”完成。没有 tk 时，先通过弹窗里的申请链接去天地图官网创建。
+
+3. 描述你想要的页面。
 
    例如：
 
@@ -56,15 +76,15 @@ import MediaFrame from '../../components/MediaFrame.astro'
    右侧地图要跟随章节切换联动视角。
    ```
 
-3. 等待第一版页面生成并进入预览。
+4. 等待第一版页面生成并进入预览。
 
    第一次的目标是确认页面结构方向正确，而不是马上抠细节。
 
-4. 继续补充要求。
+5. 继续补充要求。
 
    如果第一版还不够完整，继续提出“风格更庄重”“加图例”“补路线说明”“内容更适合汇报”等要求。
 
-5. 页面稳定后再生成分享链接。
+6. 页面稳定后再生成分享链接。
 
    到达可展示状态后，再进入分享步骤补标题、描述和公开方式。
 

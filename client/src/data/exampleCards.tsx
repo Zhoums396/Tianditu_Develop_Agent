@@ -10,6 +10,7 @@ export interface ExampleCard {
   gradient: string
   bgLight: string
   iconColor: string
+  coverUrl?: string
   preview: 'map' | 'pin' | 'parcel' | 'points' | 'flood' | 'drive' | 'transit' | 'admin' | 'batch' | 'bar3d' | 'history'
 }
 
@@ -63,6 +64,7 @@ export const exampleCards: ExampleCard[] = [
     desc: '创建一个北京市中心的地图',
     category: '快速入门',
     preview: 'map',
+    coverUrl: '/example-covers/basic-map.png',
     icon: (
       <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z" />
@@ -77,6 +79,7 @@ export const exampleCards: ExampleCard[] = [
     desc: '在地图上添加多个带弹窗的标注点',
     category: '快速入门',
     preview: 'pin',
+    coverUrl: '/example-covers/markers-popup.png',
     icon: (
       <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -94,6 +97,7 @@ export const exampleCards: ExampleCard[] = [
       '请生成一个“清华大学周边POI搜索演示”网页，要求：1）整体布局参考专业 GIS 应用：顶部标题栏（标题、副标题、右侧复制链接按钮），左侧控制面板，右侧地图；2）左侧面板包含：关键词输入框（默认“医院”）、搜索类型切换按钮（周边搜索/视野搜索/普通搜索）、搜索半径输入框、开始搜索按钮、状态提示条、搜索结果列表；3）右侧地图默认定位清华大学，右上角显示“当前位置”信息卡（地名、经纬度）；4）点击地图可切换搜索中心点，结果点在地图和列表联动高亮；5）调用 /api/tianditu/search 代理接口，三种模式分别对应 queryType=3/2/1，结果包含名称、地址、距离；6）必须使用天地图 JS API v5（TMapGL），保证移动端可用、无运行时报错、视觉风格简洁现代。',
     category: 'POI搜索',
     preview: 'points',
+    coverUrl: '/example-covers/tsinghua-poi.png',
     icon: (
       <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-4.3-4.3m1.3-5.2a6.5 6.5 0 11-13 0 6.5 6.5 0 0113 0z" />
@@ -110,6 +114,7 @@ export const exampleCards: ExampleCard[] = [
     sampleId: 'village-renovation',
     category: 'GeoJSON 分析',
     preview: 'parcel',
+    coverUrl: '/example-covers/village-renovation.png',
     icon: (
       <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3.75 9.776L12 4.5l8.25 5.276M4.5 10.25V19.5h15v-9.25M9 19.5v-4.125a3 3 0 016 0V19.5" />
@@ -127,6 +132,7 @@ export const exampleCards: ExampleCard[] = [
     sampleId: 'fulian-centers',
     category: '点位专题',
     preview: 'points',
+    coverUrl: '/example-covers/fulian-centers.png',
     icon: (
       <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -144,6 +150,7 @@ export const exampleCards: ExampleCard[] = [
     sampleId: 'long-march',
     category: '历史专题',
     preview: 'history',
+    coverUrl: '/example-covers/long-march.png',
     icon: (
       <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 3v18m0-18l6 3-6 3-6-3 6-3zm0 6l6 3-6 3-6-3 6-3z" />
@@ -159,6 +166,7 @@ export const exampleCards: ExampleCard[] = [
     prompt: lifeTreeStoryPrompt,
     category: '叙事地图',
     preview: 'history',
+    coverUrl: '/example-covers/life-tree.png',
     icon: (
       <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 21c4.142 0 7.5-2.91 7.5-6.5 0-2.88-2.165-5.324-5.168-6.16A4.75 4.75 0 006 9.5c0 .247.02.49.06.728C3.84 11.03 2.25 12.97 2.25 15.25 2.25 18.426 5.161 21 8.75 21H12z" />
@@ -177,6 +185,7 @@ export const exampleCards: ExampleCard[] = [
     sampleId: 'china-flood-events',
     category: '灾害时空分析',
     preview: 'flood',
+    coverUrl: '/example-covers/china-flood.png',
     icon: (
       <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 14.5a4 4 0 118 0c0 2.21-1.79 5.5-4 7.5-2.21-2-4-5.29-4-7.5z" />
@@ -193,6 +202,7 @@ export const exampleCards: ExampleCard[] = [
     prompt: '帮我用API实现北京到上海的驾车路线规划',
     category: '路径规划',
     preview: 'drive',
+    coverUrl: '/example-covers/beijing-shanghai-drive.png',
     icon: (
       <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3.75 16.5h16.5M6 16.5l1.125-4.5h9.75L18 16.5M8.25 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zm10.5 0a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM9 12V9.75A2.25 2.25 0 0111.25 7.5h1.5A2.25 2.25 0 0115 9.75V12" />
@@ -209,6 +219,7 @@ export const exampleCards: ExampleCard[] = [
       '请帮我生成一个美观可用的公交地铁路线规划网页：左侧控制面板 + 右侧地图，支持输入或地图点击选择起终点，支持较快捷/少换乘/少步行/不坐地铁策略，调用天地图 transit?type=busline API 获取真实方案并渲染线路、方案列表和换乘详情。',
     category: '路径规划',
     preview: 'transit',
+    coverUrl: '/example-covers/transit-route.png',
     icon: (
       <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8.25 18.75a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zm10.5 0a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM4.5 16.5h15M6.75 16.5v-6A2.25 2.25 0 019 8.25h6a2.25 2.25 0 012.25 2.25v6M9 10.5h6M12 8.25V6" />
@@ -225,6 +236,7 @@ export const exampleCards: ExampleCard[] = [
       '帮我加载江苏省所有地级市的矢量边界。要求：使用 /api/tianditu/administrative，设置 childLevel=1、extensions=true、autoResolveCodebook=true、boundaryFormat=geojson、outputScope=children、expandChildrenBoundary=true，并按地级市分色渲染面图层和边界线，自动适配视野。',
     category: '行政区划',
     preview: 'admin',
+    coverUrl: '/example-covers/jiangsu-admin.png',
     icon: (
       <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 6.75l6.75-3 6.75 3 4.5-1.5v12l-4.5 1.5-6.75-3-6.75 3V6.75z" />
@@ -241,6 +253,7 @@ export const exampleCards: ExampleCard[] = [
     prompt: jiangsuVillageBatchPrompt,
     category: '批处理任务',
     preview: 'batch',
+    coverUrl: '/example-covers/jiangsu-villages.png',
     icon: (
       <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.5 6.75h15m-15 5.25h15m-15 5.25h9M16.5 17.25l1.5 1.5 3-3" />
@@ -255,6 +268,7 @@ export const exampleCards: ExampleCard[] = [
     desc: '城市 GDP 数据 3D 柱状图',
     category: '可视化模板',
     preview: 'bar3d',
+    coverUrl: '/example-covers/bar3d.png',
     icon: (
       <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />

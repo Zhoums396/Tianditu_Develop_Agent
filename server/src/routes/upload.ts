@@ -3,15 +3,31 @@ import { upload } from '../middleware/upload.js'
 import { FileParser } from '../services/FileParser.js'
 import { getRequestContext } from '../middleware/requestContext.js'
 import { normalizeStructuredRuntime, saveNormalizedStructuredData } from '../services/StructuredFileRuntime.js'
+import { config } from '../config.js'
 
 const router = Router()
 const fileParser = new FileParser()
 
+function buildRuntimeFilePath(relativePath: string): string {
+  const path = relativePath.startsWith('/') ? relativePath : `/${relativePath}`
+  if (!path.startsWith('/uploads/')) return path
+
+  const rawBase = config.publicSamples.basePath || process.env.VITE_BASE_PATH || ''
+  const basePath = rawBase && rawBase !== '/'
+    ? `/${rawBase.replace(/^\/+|\/+$/g, '')}`
+    : ''
+
+  if (!basePath || path.startsWith(`${basePath}/`)) return path
+  return `${basePath}${path}`
+}
+
 function buildAbsoluteFileUrl(req: Request, relativePath: string): string | undefined {
+  const runtimePath = buildRuntimeFilePath(relativePath)
+
   const origin = req.get('origin')
   if (origin && /^https?:\/\//i.test(origin)) {
     try {
-      return new URL(relativePath, origin).toString()
+      return new URL(runtimePath, origin).toString()
     } catch {
       // noop
     }
@@ -23,7 +39,7 @@ function buildAbsoluteFileUrl(req: Request, relativePath: string): string | unde
   if (!host) return undefined
 
   try {
-    return new URL(relativePath, `${proto}://${host}`).toString()
+    return new URL(runtimePath, `${proto}://${host}`).toString()
   } catch {
     return undefined
   }

@@ -6,7 +6,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class BridgeAuthProperties {
   private String cookieName = "tdt_auth";
   private String sharedSecret = "change-this-in-production";
-  private long cookieMaxAgeSeconds = 7200L;
+  private long cookieMaxAgeSeconds = 21600L;
   private boolean cookieSecure;
   private String cookieDomain;
   private String defaultRedirect = "/workspace";

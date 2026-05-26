@@ -4,6 +4,12 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
+function normalizeBasePath(value: string | undefined) {
+  const raw = (value || '/').trim()
+  if (!raw || raw === '/') return '/'
+  return `/${raw.replace(/^\/+|\/+$/g, '')}/`
+}
+
 function contentType(filePath: string) {
   const ext = extname(filePath).toLowerCase()
   switch (ext) {
@@ -62,6 +68,7 @@ function docsStaticDevPlugin() {
 }
 
 export default defineConfig({
+  base: normalizeBasePath(process.env.VITE_BASE_PATH),
   plugins: [react(), tailwindcss(), docsStaticDevPlugin()],
   server: {
     port: 5173,

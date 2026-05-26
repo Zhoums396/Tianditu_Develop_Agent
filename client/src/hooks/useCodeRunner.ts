@@ -5,6 +5,34 @@ function buildCaptureScriptTag(runId: string) {
   return `<script>
     (function() {
       var __codexRunId = ${JSON.stringify(runId)};
+      var __codexRenderState = window.__codexRenderState = {
+        pendingRequests: 0,
+        lastNetworkActivityAt: Date.now ? Date.now() : new Date().getTime(),
+        lastDomMutationAt: Date.now ? Date.now() : new Date().getTime()
+      };
+
+      function markRenderActivity(kind, delta) {
+        var t = Date.now ? Date.now() : new Date().getTime();
+        try {
+          if (typeof delta === 'number') {
+            __codexRenderState.pendingRequests = Math.max(0, Number(__codexRenderState.pendingRequests || 0) + delta);
+          }
+          if (kind === 'network') __codexRenderState.lastNetworkActivityAt = t;
+          if (kind === 'dom') __codexRenderState.lastDomMutationAt = t;
+        } catch (_) {}
+      }
+
+      try {
+        var observer = new MutationObserver(function() {
+          markRenderActivity('dom', 0);
+        });
+        observer.observe(document.documentElement || document, {
+          childList: true,
+          subtree: true,
+          attributes: true,
+          characterData: true
+        });
+      } catch (_) {}
 
       function patchCanvasContexts() {
         function patch(proto) {
@@ -122,6 +150,11 @@ function buildCaptureScriptTag(runId: string) {
       // 2. error 事件（包括部分脚本错误路径）
       window.addEventListener('error', function(e) {
         if (!e) return;
+        try {
+          var target = e.target || e.srcElement;
+          var tagName = target && target.tagName ? String(target.tagName).toUpperCase() : '';
+          if (tagName === 'IMG' || tagName === 'LINK' || tagName === 'SOURCE') return;
+        } catch (_) {}
         var err = e.error || null;
         var msg = stringifyError(err) || e.message || '脚本错误';
         var src = e.filename || '';
@@ -232,6 +265,7 @@ function buildCaptureScriptTag(runId: string) {
             if (resolved.url) url = resolved.url;
           } catch (_) {}
 
+          markRenderActivity('network', 1);
           return origFetch.apply(window, args).then(function(res) {
             try {
               if (res && typeof res.status === 'number' && res.status >= 400) {
@@ -257,6 +291,8 @@ function buildCaptureScriptTag(runId: string) {
               method: method,
             });
             throw err;
+          }).finally(function() {
+            markRenderActivity('network', -1);
           });
         };
       }
@@ -280,8 +316,10 @@ function buildCaptureScriptTag(runId: string) {
           try {
             if (!xhr.__codexErrorHooked) {
               xhr.__codexErrorHooked = true;
+              markRenderActivity('network', 1);
 
               xhr.addEventListener('loadend', function() {
+                markRenderActivity('network', -1);
                 var status = 0;
                 try { status = Number(xhr.status || 0); } catch (_) {}
                 if (status >= 400) {

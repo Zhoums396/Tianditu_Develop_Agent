@@ -101,6 +101,14 @@ export const config = {
   nodeEnv: process.env.NODE_ENV || 'development',
 
   tiandituToken: process.env.TIANDITU_TOKEN || '',
+  tiandituTokenCookie: {
+    secure: envBoolean('TIANDITU_TOKEN_COOKIE_SECURE', false),
+  },
+
+  publicSamples: {
+    basePath: process.env.PUBLIC_SAMPLE_BASE_PATH || process.env.VITE_BASE_PATH || '/ai/dev/',
+    tiandituToken: process.env.PUBLIC_SAMPLE_TIANDITU_TOKEN || '4043dde46add842282bacc412299311d',
+  },
 
   llm: {
     apiKey: process.env.DASHSCOPE_API_KEY || process.env.LLM_API_KEY || '',

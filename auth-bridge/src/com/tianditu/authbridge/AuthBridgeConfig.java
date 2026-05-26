@@ -51,7 +51,7 @@ public final class AuthBridgeConfig {
         parseInt("AUTH_BRIDGE_PORT", 8080),
         readString("AUTH_COOKIE_NAME", "tdt_auth"),
         readString("AUTH_SHARED_SECRET", "tdt-dev-shared-secret"),
-        parseLong("AUTH_COOKIE_MAX_AGE_SECONDS", 7200L),
+        parseLong("AUTH_COOKIE_MAX_AGE_SECONDS", 21600L),
         parseBoolean("AUTH_COOKIE_SECURE", false),
         readString("AUTH_COOKIE_DOMAIN", ""),
         readOptionalString("AUTH_BRIDGE_SDK_JAR"),

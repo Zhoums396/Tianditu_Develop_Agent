@@ -25,6 +25,8 @@ import {
   saveNormalizedStructuredData,
 } from '../services/StructuredFileRuntime.js'
 import { runDossierStore, type RunEntrySource, type RunOutcome, type RunPhase } from '../services/RunDossierStore.js'
+import { getRequestTiandituToken } from '../utils/tiandituToken.js'
+import { readTextField } from '../utils/transportEncoding.js'
 
 const router = Router()
 const agent = new MapAgent()
@@ -68,8 +70,8 @@ function isBuiltinSampleId(value: unknown): value is BuiltinSampleId {
 }
 
 /** 统一替换 token：占位符 + LLM 可能硬编码的任意 32 位 hex token */
-function injectToken(code: string): string {
-  const token = config.tiandituToken
+function injectToken(code: string, req?: Request): string {
+  const token = req ? getRequestTiandituToken(req) : config.tiandituToken
   if (!token) return code
   // 替换占位符
   code = code.replace(/\$\{TIANDITU_TOKEN\}/g, token)
@@ -83,12 +85,27 @@ function injectToken(code: string): string {
   return code
 }
 
+function buildRuntimeFilePath(relativePath: string): string {
+  const path = relativePath.startsWith('/') ? relativePath : `/${relativePath}`
+  if (!path.startsWith('/uploads/')) return path
+
+  const rawBase = config.publicSamples.basePath || process.env.VITE_BASE_PATH || ''
+  const basePath = rawBase && rawBase !== '/'
+    ? `/${rawBase.replace(/^\/+|\/+$/g, '')}`
+    : ''
+
+  if (!basePath || path.startsWith(`${basePath}/`)) return path
+  return `${basePath}${path}`
+}
+
 function buildAbsoluteFileUrl(req: Request, relativePath: string): string | undefined {
+  const runtimePath = buildRuntimeFilePath(relativePath)
+
   // 优先使用浏览器 Origin（经 Vite 代理转发时通常仍保留），这样更贴近页面实际运行的同源地址（如 :5173）
   const origin = req.get('origin')
   if (origin && /^https?:\/\//i.test(origin)) {
     try {
-      return new URL(relativePath, origin).toString()
+      return new URL(runtimePath, origin).toString()
     } catch {
       // ignore and fallback
     }
@@ -101,7 +118,7 @@ function buildAbsoluteFileUrl(req: Request, relativePath: string): string | unde
   if (!host) return undefined
 
   try {
-    return new URL(relativePath, `${proto}://${host}`).toString()
+    return new URL(runtimePath, `${proto}://${host}`).toString()
   } catch {
     return undefined
   }
@@ -442,8 +459,8 @@ function visualInspectUnavailable(reason: string) {
     anomalous: false,
     shouldRepair: false,
     severity: 'low' as const,
-    summary: '视觉巡检不可用',
-    diagnosis: reason || '视觉巡检暂时不可用。',
+    summary: '视觉检查不可用',
+    diagnosis: reason || '视觉检查暂时不可用。',
     repairHint: '无',
     confidence: 0,
     model: config.llm.model,
@@ -506,9 +523,9 @@ function normalizeVisualInspectByCaptureMeta(
   return visualInspectUnavailable('前端截图受跨域画布限制影响，当前截图无法可靠反映地图渲染内容。')
 }
 
-// POST /api/chat/visual-inspect — 地图视觉巡检
+// POST /api/chat/visual-inspect — 地图视觉检查
 router.post('/visual-inspect', async (req, res) => {
-  const rawCode = typeof req.body?.code === 'string' ? req.body.code : ''
+  const rawCode = readTextField(req.body, 'code', 'codeBase64') || ''
   const rawImageBase64 = typeof req.body?.imageBase64 === 'string' ? req.body.imageBase64 : ''
   const hint = typeof req.body?.hint === 'string' ? req.body.hint : ''
   const runId = typeof req.body?.runId === 'string' ? req.body.runId : ''
@@ -535,7 +552,7 @@ router.post('/visual-inspect', async (req, res) => {
   const maxCodeChars = Number.isFinite(config.visualInspection.maxCodeChars)
     ? Math.max(10000, config.visualInspection.maxCodeChars)
     : 400000
-  const code = injectToken(rawCode.length > maxCodeChars ? rawCode.slice(0, maxCodeChars) : rawCode)
+  const code = injectToken(rawCode.length > maxCodeChars ? rawCode.slice(0, maxCodeChars) : rawCode, req)
   const imageBase64 = rawImageBase64.trim()
 
   try {
@@ -592,7 +609,7 @@ router.post('/visual-inspect', async (req, res) => {
         await runDossierStore.appendError(dossierRunId, {
           source: 'visual',
           kind: normalized.severity,
-          message: `[视觉巡检异常] ${normalized.summary}\n${normalized.diagnosis}`,
+          message: `[视觉检查异常] ${normalized.summary}\n${normalized.diagnosis}`,
           markFailed: true,
           outcome: 'visual_error',
           details: {
@@ -613,14 +630,14 @@ router.post('/visual-inspect', async (req, res) => {
       await runDossierStore.appendError(dossierRunId, {
         source: 'server',
         kind: 'visual-inspect',
-        message: err?.message || '视觉巡检失败',
+        message: err?.message || '视觉检查失败',
         markFailed: false,
         details: { runId, hint },
       })
     }
     res.json({
       success: true,
-      data: visualInspectUnavailable(err?.message || '视觉巡检失败。'),
+      data: visualInspectUnavailable(err?.message || '视觉检查失败。'),
     })
   }
 })
@@ -649,7 +666,11 @@ router.post('/sample-context', async (req, res) => {
 
 // POST /api/chat/stream — 流式聊天接口 (SSE)
 router.post('/stream', upload.single('file'), async (req, res) => {
-  const { message, conversationHistory, existingCode, fileContext, sampleId } = req.body
+  const { message, fileContext, sampleId } = req.body
+  const existingCode = readTextField(req.body, 'existingCode', 'existingCodePayload')
+    || readTextField(req.body, 'existingCode', 'existingCodeBase64')
+  const conversationHistory = readTextField(req.body, 'conversationHistory', 'conversationHistoryPayload')
+    || readTextField(req.body, 'conversationHistory', 'conversationHistoryBase64')
 
   if (!message) {
     res.status(400).json({ success: false, error: '请输入消息' })
@@ -844,7 +865,7 @@ router.post('/stream', upload.single('file'), async (req, res) => {
       let data = decoratedChunk
       // 对 code 类型注入 token
       if (decoratedChunk.type === 'code' && decoratedChunk.content) {
-        data = { ...decoratedChunk, content: injectToken(String(decoratedChunk.content || '')) }
+        data = { ...decoratedChunk, content: injectToken(String(decoratedChunk.content || ''), req) }
       }
       res.write(`data: ${JSON.stringify(data)}\n\n`)
     }
@@ -884,7 +905,11 @@ router.post('/stream', upload.single('file'), async (req, res) => {
 // POST /api/chat — 非流式聊天接口（保留兼容）
 router.post('/', upload.single('file'), async (req, res, next) => {
   try {
-    const { message, conversationHistory, existingCode, fileContext, sampleId } = req.body
+    const { message, fileContext, sampleId } = req.body
+    const existingCode = readTextField(req.body, 'existingCode', 'existingCodePayload')
+      || readTextField(req.body, 'existingCode', 'existingCodeBase64')
+    const conversationHistory = readTextField(req.body, 'conversationHistory', 'conversationHistoryPayload')
+      || readTextField(req.body, 'conversationHistory', 'conversationHistoryBase64')
 
     if (!message) {
       return res.status(400).json({ success: false, error: '请输入消息' })
@@ -910,7 +935,7 @@ router.post('/', upload.single('file'), async (req, res, next) => {
     // 替换 token
     let code = result.code
     if (code) {
-      code = injectToken(code)
+      code = injectToken(code, req)
     }
 
     res.json({
@@ -930,7 +955,11 @@ router.post('/', upload.single('file'), async (req, res, next) => {
 // POST /api/chat/fix — 代码修复
 router.post('/fix', async (req, res, next) => {
   try {
-    const { code, error, userInput, fileContext } = req.body
+    const { userInput, fileContext } = req.body
+    const code = readTextField(req.body, 'code', 'codePayload')
+      || readTextField(req.body, 'code', 'codeBase64')
+    const error = readTextField(req.body, 'error', 'errorPayload')
+      || readTextField(req.body, 'error', 'errorBase64')
 
     if (!code || !error) {
       return res.status(400).json({ success: false, error: '缺少代码或错误信息' })
@@ -944,7 +973,7 @@ router.post('/fix', async (req, res, next) => {
 
     let fixedCode = result.code
     if (fixedCode) {
-      fixedCode = injectToken(fixedCode)
+      fixedCode = injectToken(fixedCode, req)
     }
 
     res.json({
@@ -963,7 +992,11 @@ router.post('/fix', async (req, res, next) => {
 
 // POST /api/chat/fix/stream — 流式代码修复（用于前端展示修复过程）
 router.post('/fix/stream', async (req, res) => {
-  const { code, error, userInput, fileContext, parentRunId, source } = req.body
+  const { userInput, fileContext, parentRunId, source } = req.body
+  const code = readTextField(req.body, 'code', 'codePayload')
+    || readTextField(req.body, 'code', 'codeBase64')
+  const error = readTextField(req.body, 'error', 'errorPayload')
+    || readTextField(req.body, 'error', 'errorBase64')
 
   if (!code || !error) {
     res.status(400).json({ success: false, error: '缺少代码或错误信息' })
@@ -1109,7 +1142,7 @@ router.post('/fix/stream', async (req, res) => {
 
       let data = decoratedChunk
       if (decoratedChunk.type === 'code' && decoratedChunk.content) {
-        data = { ...decoratedChunk, content: injectToken(String(decoratedChunk.content || '')) }
+        data = { ...decoratedChunk, content: injectToken(String(decoratedChunk.content || ''), req) }
       }
       res.write(`data: ${JSON.stringify(data)}\n\n`)
     }

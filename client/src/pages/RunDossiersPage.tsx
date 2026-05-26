@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { runDossierApi } from '../services/runDossierApi'
 import { copyText } from '../utils/copyText'
 import { docsUrl } from '../utils/docsUrl'
+import { appAsset } from '../utils/basePath'
 import type {
   RunArtifactContentResult,
   RunArtifactRecord,
@@ -122,7 +123,7 @@ function artifactKindLabel(kind: string) {
     'file-context': '文件上下文',
     'generated-code': '生成代码',
     'fixed-code': '修复代码',
-    'visual-result': '视觉巡检',
+    'visual-result': '视觉检查',
     'visual-screenshot': '视觉截图',
     'fix-request': '修复请求',
     'input-code': '输入代码',
@@ -363,9 +364,9 @@ export function RunDossiersPage() {
         <header className="border-b border-black/5 bg-white/70 backdrop-blur-xl">
           <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
             <Link to="/" className="flex items-center gap-3 no-underline">
-              <img src="/tianditu-logo.png" alt="天地图" className="h-8 object-contain" />
+              <img src={appAsset('/tianditu-logo.png')} alt="天地图" className="h-8 object-contain" />
               <div className="h-6 w-px bg-slate-200" />
-              <img src="/tianditu-agent-logo.svg" alt="天地图开发智能体" className="hidden h-8 w-auto object-contain sm:block" />
+              <img src={appAsset('/tianditu-agent-logo.svg')} alt="天地图开发智能体" className="hidden h-8 w-auto object-contain sm:block" />
             </Link>
 
             <nav className="flex items-center gap-1.5 text-sm">

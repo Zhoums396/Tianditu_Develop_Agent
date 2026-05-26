@@ -62,7 +62,7 @@ GET /api/tianditu/search?keyWord=学校&queryType=14&specify=156110108
 
 ## 默认规则
 
-- 默认 API Key：`4043dde46add842282bacc412299311d`
+- 默认 API Key：`${TIANDITU_TOKEN}`
 - 如果用户没有主动提供新 key，官方协议示例默认使用这个 key
 - 如果用户主动提供其他 key，优先使用用户提供的值
 - 天地图 LBS 坐标顺序默认写作 `经度,纬度`

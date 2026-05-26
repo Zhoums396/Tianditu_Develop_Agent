@@ -22,7 +22,7 @@
 
 - 搜索端点：`http://api.tianditu.gov.cn/v2/search`
 - 对应 `queryType=3`
-- 默认 key：`4043dde46add842282bacc412299311d`
+- 默认 key：`${TIANDITU_TOKEN}`
 
 ## 当前项目代理推荐写法
 
@@ -62,7 +62,7 @@ GET /api/tianditu/search?keyWord=公园&queryType=3&pointLonlat=116.48016,39.931
 ## 最小请求模板
 
 ```bash
-curl -s "http://api.tianditu.gov.cn/v2/search?postStr={\"keyWord\":\"咖啡店\",\"pointLonlat\":\"116.39751,39.90854\",\"queryRadius\":1000,\"queryType\":3,\"start\":0,\"count\":10}&type=query&tk=4043dde46add842282bacc412299311d"
+curl -s "http://api.tianditu.gov.cn/v2/search?postStr={\"keyWord\":\"咖啡店\",\"pointLonlat\":\"116.39751,39.90854\",\"queryRadius\":1000,\"queryType\":3,\"start\":0,\"count\":10}&type=query&tk=${TIANDITU_TOKEN}"
 ```
 
 ## 完整示例
@@ -70,19 +70,19 @@ curl -s "http://api.tianditu.gov.cn/v2/search?postStr={\"keyWord\":\"咖啡店\"
 ### 示例 1：1 公里内搜酒店
 
 ```bash
-curl -s "http://api.tianditu.gov.cn/v2/search?postStr={\"keyWord\":\"酒店\",\"pointLonlat\":\"116.39751,39.90854\",\"queryRadius\":1000,\"queryType\":3,\"start\":0,\"count\":10,\"show\":2}&type=query&tk=4043dde46add842282bacc412299311d"
+curl -s "http://api.tianditu.gov.cn/v2/search?postStr={\"keyWord\":\"酒店\",\"pointLonlat\":\"116.39751,39.90854\",\"queryRadius\":1000,\"queryType\":3,\"start\":0,\"count\":10,\"show\":2}&type=query&tk=${TIANDITU_TOKEN}"
 ```
 
 ### 示例 2：5 公里内搜公园
 
 ```bash
-curl -s "http://api.tianditu.gov.cn/v2/search?postStr={\"keyWord\":\"公园\",\"pointLonlat\":\"116.48016,39.93136\",\"queryRadius\":5000,\"queryType\":3,\"start\":0,\"count\":10}&type=query&tk=4043dde46add842282bacc412299311d"
+curl -s "http://api.tianditu.gov.cn/v2/search?postStr={\"keyWord\":\"公园\",\"pointLonlat\":\"116.48016,39.93136\",\"queryRadius\":5000,\"queryType\":3,\"start\":0,\"count\":10}&type=query&tk=${TIANDITU_TOKEN}"
 ```
 
 ### 示例 3：带 level 的官方风格写法
 
 ```bash
-curl -s "http://api.tianditu.gov.cn/v2/search?postStr={\"keyWord\":\"医院\",\"level\":12,\"queryRadius\":5000,\"pointLonlat\":\"116.48016,39.93136\",\"queryType\":3,\"start\":0,\"count\":10}&type=query&tk=4043dde46add842282bacc412299311d"
+curl -s "http://api.tianditu.gov.cn/v2/search?postStr={\"keyWord\":\"医院\",\"level\":12,\"queryRadius\":5000,\"pointLonlat\":\"116.48016,39.93136\",\"queryType\":3,\"start\":0,\"count\":10}&type=query&tk=${TIANDITU_TOKEN}"
 ```
 
 ## 返回结构
@@ -142,7 +142,7 @@ curl -s "http://api.tianditu.gov.cn/v2/search?postStr={\"keyWord\":\"医院\",\"
 - queryType：3
 - 中心点：经度,纬度
 - 半径：默认 1000 米
-- 默认 key：4043dde46add842282bacc412299311d
+- 默认 key：${TIANDITU_TOKEN}
 
 请求重点查看：
 - resultType

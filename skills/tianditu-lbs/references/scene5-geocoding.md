@@ -82,7 +82,7 @@ fetch(url.toString())
 ## 官方端点
 
 - `http://api.tianditu.gov.cn/geocoder?ds=...`
-- 默认 key：`4043dde46add842282bacc412299311d`
+- 默认 key：`${TIANDITU_TOKEN}`
 
 ## 必填参数
 
@@ -93,7 +93,7 @@ fetch(url.toString())
 ## 最小请求模板
 
 ```bash
-curl -s "http://api.tianditu.gov.cn/geocoder?ds={\"keyWord\":\"北京市海淀区莲花池西路28号\"}&tk=4043dde46add842282bacc412299311d"
+curl -s "http://api.tianditu.gov.cn/geocoder?ds={\"keyWord\":\"北京市海淀区莲花池西路28号\"}&tk=${TIANDITU_TOKEN}"
 ```
 
 ## 完整示例
@@ -101,13 +101,13 @@ curl -s "http://api.tianditu.gov.cn/geocoder?ds={\"keyWord\":\"北京市海淀�
 ### 示例 1：详细地址转坐标
 
 ```bash
-curl -s "http://api.tianditu.gov.cn/geocoder?ds={\"keyWord\":\"北京市海淀区莲花池西路28号\"}&tk=4043dde46add842282bacc412299311d"
+curl -s "http://api.tianditu.gov.cn/geocoder?ds={\"keyWord\":\"北京市海淀区莲花池西路28号\"}&tk=${TIANDITU_TOKEN}"
 ```
 
 ### 示例 2：地名转坐标
 
 ```bash
-curl -s "http://api.tianditu.gov.cn/geocoder?ds={\"keyWord\":\"故宫博物院\"}&tk=4043dde46add842282bacc412299311d"
+curl -s "http://api.tianditu.gov.cn/geocoder?ds={\"keyWord\":\"故宫博物院\"}&tk=${TIANDITU_TOKEN}"
 ```
 
 ## 返回结构
@@ -169,7 +169,7 @@ curl -s "http://api.tianditu.gov.cn/geocoder?ds={\"keyWord\":\"故宫博物院\"
 
 - 端点：/geocoder
 - 参数容器：ds
-- 默认 key：4043dde46add842282bacc412299311d
+- 默认 key：${TIANDITU_TOKEN}
 
 关键结果：
 - status

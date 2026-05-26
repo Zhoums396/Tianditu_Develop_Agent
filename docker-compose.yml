@@ -21,27 +21,18 @@ services:
     networks:
       - tianditu_net
 
-  auth-bridge:
-    build:
-      context: ./auth-bridge
-    container_name: tianditu-auth-bridge
-    restart: unless-stopped
-    env_file:
-      - ./.env
-    environment:
-      AUTH_BRIDGE_PORT: 8080
-    networks:
-      - tianditu_net
-
   web:
     build:
       context: .
       dockerfile: client/Dockerfile
+      args:
+        VITE_BASE_PATH: ${VITE_BASE_PATH:-/}
     container_name: tianditu-web
     restart: unless-stopped
     depends_on:
       - api
-      - auth-bridge
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "80:80"
     networks:

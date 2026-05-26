@@ -2,7 +2,7 @@ import { defineConfig } from 'astro/config'
 import starlight from '@astrojs/starlight'
 
 export default defineConfig({
-  base: '/docs',
+  base: process.env.DOCS_BASE_PATH ?? '/docs',
   site: process.env.DOCS_SITE_URL ?? 'https://example.com',
   integrations: [
     starlight({

@@ -2,9 +2,7 @@ import type { ReactNode } from 'react'
 
 interface ViewportModeControlsProps {
   pageFilled: boolean
-  fullscreenActive: boolean
   onTogglePageFill: () => void
-  onToggleFullscreen: () => void
   className?: string
 }
 
@@ -24,36 +22,6 @@ function ExitPageFillIcon() {
       <path d="M9 8h6" />
       <path d="M9 12h6" />
       <path d="M9 16h6" />
-    </svg>
-  )
-}
-
-function EnterFullscreenIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="9 3 3 3 3 9" />
-      <line x1="3" y1="3" x2="10" y2="10" />
-      <polyline points="15 3 21 3 21 9" />
-      <line x1="21" y1="3" x2="14" y2="10" />
-      <polyline points="21 15 21 21 15 21" />
-      <line x1="21" y1="21" x2="14" y2="14" />
-      <polyline points="9 21 3 21 3 15" />
-      <line x1="3" y1="21" x2="10" y2="14" />
-    </svg>
-  )
-}
-
-function ExitFullscreenIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="15 9 21 9 21 3" />
-      <line x1="14" y1="10" x2="21" y2="3" />
-      <polyline points="9 9 3 9 3 3" />
-      <line x1="10" y1="10" x2="3" y2="3" />
-      <polyline points="15 15 21 15 21 21" />
-      <line x1="14" y1="14" x2="21" y2="21" />
-      <polyline points="9 15 3 15 3 21" />
-      <line x1="10" y1="14" x2="3" y2="21" />
     </svg>
   )
 }
@@ -87,13 +55,6 @@ export function ViewportModeControls(props: ViewportModeControlsProps) {
           onClick={props.onTogglePageFill}
         >
           {props.pageFilled ? <ExitPageFillIcon /> : <PageFillIcon />}
-        </ControlButton>
-
-        <ControlButton
-          title={props.fullscreenActive ? '退出全屏' : '全屏'}
-          onClick={props.onToggleFullscreen}
-        >
-          {props.fullscreenActive ? <ExitFullscreenIcon /> : <EnterFullscreenIcon />}
         </ControlButton>
       </div>
     </div>

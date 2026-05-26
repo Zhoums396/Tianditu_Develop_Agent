@@ -4,7 +4,6 @@ description: 介绍如何生成分享链接、设置公开状态，以及创建�
 ---
 
 import { Aside, Card, CardGrid, Steps, Tabs, TabItem } from '@astrojs/starlight/components'
-import MediaFrame from '../../components/MediaFrame.astro'
 
 当页面接近交付状态后，发布并不是最后一个动作。真正完整的分享流程，还包括标题、描述、公开方式和后续维护。
 
@@ -59,14 +58,6 @@ import MediaFrame from '../../components/MediaFrame.astro'
     分享创建者仍可修改标题、描述和可见性，让页面始终与最新用途保持一致。
   </Card>
 </CardGrid>
-
-## 教学素材位
-
-<MediaFrame
-  kind="image"
-  title="分享页管理截图"
-  note="建议放一张包含标题、描述、可见性和复制链接区域的真实截图，帮助用户理解发布之后还能继续改哪些信息。"
-/>
 
 <Aside type="tip" title="交付现场最稳妥的做法">
 正式对外展示前，先把分享链接发给一位内部同事试阅，确认标题、描述、首屏内容和访问方式都符合预期，再切换为公开状态。

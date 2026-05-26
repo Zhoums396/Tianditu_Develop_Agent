@@ -22,7 +22,7 @@
 ## 官方端点
 
 - `http://api.tianditu.gov.cn/transit?type=busline&postStr=...`
-- 默认 key：`4043dde46add842282bacc412299311d`
+- 默认 key：`${TIANDITU_TOKEN}`
 
 ## 必填参数
 
@@ -68,7 +68,7 @@
 ## 最小请求模板
 
 ```bash
-curl -s "http://api.tianditu.gov.cn/transit?type=busline&postStr={\"startposition\":\"116.427562,39.939677\",\"endposition\":\"116.349329,39.939132\",\"linetype\":\"1\"}&tk=4043dde46add842282bacc412299311d"
+curl -s "http://api.tianditu.gov.cn/transit?type=busline&postStr={\"startposition\":\"116.427562,39.939677\",\"endposition\":\"116.349329,39.939132\",\"linetype\":\"1\"}&tk=${TIANDITU_TOKEN}"
 ```
 
 ## 完整示例
@@ -76,19 +76,19 @@ curl -s "http://api.tianditu.gov.cn/transit?type=busline&postStr={\"startpositio
 ### 示例 1：较快捷
 
 ```bash
-curl -s "http://api.tianditu.gov.cn/transit?type=busline&postStr={\"startposition\":\"116.427562,39.939677\",\"endposition\":\"116.349329,39.939132\",\"linetype\":\"1\"}&tk=4043dde46add842282bacc412299311d"
+curl -s "http://api.tianditu.gov.cn/transit?type=busline&postStr={\"startposition\":\"116.427562,39.939677\",\"endposition\":\"116.349329,39.939132\",\"linetype\":\"1\"}&tk=${TIANDITU_TOKEN}"
 ```
 
 ### 示例 2：少换乘
 
 ```bash
-curl -s "http://api.tianditu.gov.cn/transit?type=busline&postStr={\"startposition\":\"116.427562,39.939677\",\"endposition\":\"116.349329,39.939132\",\"linetype\":\"2\"}&tk=4043dde46add842282bacc412299311d"
+curl -s "http://api.tianditu.gov.cn/transit?type=busline&postStr={\"startposition\":\"116.427562,39.939677\",\"endposition\":\"116.349329,39.939132\",\"linetype\":\"2\"}&tk=${TIANDITU_TOKEN}"
 ```
 
 ### 示例 3：少换乘且不坐地铁
 
 ```bash
-curl -s "http://api.tianditu.gov.cn/transit?type=busline&postStr={\"startposition\":\"116.427562,39.939677\",\"endposition\":\"116.349329,39.939132\",\"linetype\":\"10\"}&tk=4043dde46add842282bacc412299311d"
+curl -s "http://api.tianditu.gov.cn/transit?type=busline&postStr={\"startposition\":\"116.427562,39.939677\",\"endposition\":\"116.349329,39.939132\",\"linetype\":\"10\"}&tk=${TIANDITU_TOKEN}"
 ```
 
 ## 返回结构
@@ -177,7 +177,7 @@ curl -s "http://api.tianditu.gov.cn/transit?type=busline&postStr={\"startpositio
 
 - 端点：/transit?type=busline
 - 规划类型：linetype
-- 默认 key：4043dde46add842282bacc412299311d
+- 默认 key：${TIANDITU_TOKEN}
 
 结果重点查看：
 - resultCode

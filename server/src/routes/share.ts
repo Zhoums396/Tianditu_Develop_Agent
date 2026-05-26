@@ -3,12 +3,14 @@ import { config } from '../config.js'
 import { requireAuth } from '../middleware/auth.js'
 import { ShareStore, type ShareRecord, type ShareVisibility } from '../services/ShareStore.js'
 import { ShareSuggestionService } from '../services/ShareSuggestionService.js'
+import { getRequestTiandituToken } from '../utils/tiandituToken.js'
+import { readTextField } from '../utils/transportEncoding.js'
 
 const router = Router()
 const store = new ShareStore({
   rootDir: config.share.dir,
   uploadDir: config.upload.dir,
-  tiandituToken: config.tiandituToken,
+  publicBasePath: config.publicSamples.basePath,
   thumbnail: {
     enabled: config.share.thumbnail.enabled,
     baseUrl: config.share.thumbnail.baseUrl,
@@ -46,7 +48,7 @@ function buildAbsoluteUrl(req: Request, relativePath: string): string {
   return new URL(relativePath, `${proto}://${host}`).toString()
 }
 
-function toPublicItem(req: Request, item: ShareRecord, canManage = false) {
+function toPublicItem(req: Request, item: ShareRecord) {
   return {
     slug: item.slug,
     title: item.title,
@@ -60,15 +62,19 @@ function toPublicItem(req: Request, item: ShareRecord, canManage = false) {
     codeSizeBytes: item.codeSizeBytes,
     htmlUrl: buildAbsoluteUrl(req, `/share-assets/${item.htmlRelativePath}`),
     thumbnailUrl: buildAbsoluteUrl(req, `/share-assets/${item.thumbnailRelativePath}`),
-    canManage,
+    creatorName: item.creatorName || '普通用户',
   }
+}
+
+function resolveCreatorName(req: Request): string | undefined {
+  return req.user?.displayName || req.user?.loginName
 }
 
 // POST /api/share/maps — 创建分享快照
 router.post('/maps', requireAuth, async (req, res, next) => {
   try {
     await storeReady
-    const code = typeof req.body?.code === 'string' ? req.body.code : ''
+    const code = readTextField(req.body, 'code', 'codeBase64') || ''
     const title = typeof req.body?.title === 'string' ? req.body.title : undefined
     const description = typeof req.body?.description === 'string' ? req.body.description : undefined
     const visibility = parseVisibility(req.body?.visibility)
@@ -84,19 +90,17 @@ router.post('/maps', requireAuth, async (req, res, next) => {
       description,
       visibility,
       thumbnailBase64,
+      tiandituToken: getRequestTiandituToken(req),
+      creatorName: resolveCreatorName(req),
     })
 
     const sharePath = `/share/${created.item.slug}`
-    const manageToken = created.manageToken
-    const managePath = `${sharePath}?manageToken=${encodeURIComponent(manageToken)}`
 
     res.json({
       success: true,
       data: {
-        ...toPublicItem(req, created.item, true),
+        ...toPublicItem(req, created.item),
         shareUrl: buildAbsoluteUrl(req, sharePath),
-        manageUrl: buildAbsoluteUrl(req, managePath),
-        manageToken,
       },
     })
   } catch (err) {
@@ -108,7 +112,7 @@ router.post('/maps', requireAuth, async (req, res, next) => {
 router.post('/maps/suggest', requireAuth, async (req, res, next) => {
   try {
     await storeReady
-    const rawCode = typeof req.body?.code === 'string' ? req.body.code : ''
+    const rawCode = readTextField(req.body, 'code', 'codeBase64') || ''
     const hintRaw = typeof req.body?.hint === 'string' ? req.body.hint : ''
     const promptRaw = typeof req.body?.prompt === 'string' ? req.body.prompt : ''
     const hint = [hintRaw, promptRaw].map((x) => x.trim()).filter(Boolean).join('\n')
@@ -121,59 +125,16 @@ router.post('/maps/suggest', requireAuth, async (req, res, next) => {
       ? rawCode.slice(0, MAX_SUGGEST_CODE_CHARS)
       : rawCode
 
-    const suggestion = await suggestionService.suggest({ code, hint: hint || undefined })
+    const suggestion = await suggestionService.suggest({
+      code,
+      hint: hint || undefined,
+      tiandituToken: getRequestTiandituToken(req),
+    })
     res.json({
       success: true,
       data: suggestion,
     })
   } catch (err) {
-    next(err)
-  }
-})
-
-// POST /api/share/maps/suggest/stream — 流式生成分享标题和描述
-router.post('/maps/suggest/stream', requireAuth, async (req, res, next) => {
-  try {
-    await storeReady
-    const rawCode = typeof req.body?.code === 'string' ? req.body.code : ''
-    const hintRaw = typeof req.body?.hint === 'string' ? req.body.hint : ''
-    const promptRaw = typeof req.body?.prompt === 'string' ? req.body.prompt : ''
-    const hint = [hintRaw, promptRaw].map((x) => x.trim()).filter(Boolean).join('\n')
-
-    if (!rawCode.trim()) {
-      return res.status(400).json({ success: false, error: '缺少可分析的地图代码' })
-    }
-
-    const code = rawCode.length > MAX_SUGGEST_CODE_CHARS
-      ? rawCode.slice(0, MAX_SUGGEST_CODE_CHARS)
-      : rawCode
-
-    res.setHeader('Content-Type', 'text/event-stream')
-    res.setHeader('Cache-Control', 'no-cache')
-    res.setHeader('Connection', 'keep-alive')
-    res.flushHeaders?.()
-
-    let closed = false
-    req.on('close', () => {
-      closed = true
-    })
-
-    for await (const chunk of suggestionService.suggestStream({ code, hint: hint || undefined })) {
-      if (closed) break
-      res.write(`data: ${JSON.stringify({ type: 'suggestion_delta', ...chunk })}\n\n`)
-    }
-
-    if (!closed) {
-      res.write('data: [DONE]\n\n')
-      res.end()
-    }
-  } catch (err: any) {
-    if (res.headersSent) {
-      res.write(`data: ${JSON.stringify({ type: 'error', error: err?.message || '生成失败' })}\n\n`)
-      res.write('data: [DONE]\n\n')
-      res.end()
-      return
-    }
     next(err)
   }
 })
@@ -186,15 +147,12 @@ router.get('/maps/:slug', async (req, res, next) => {
     if (!slug) return res.status(400).json({ success: false, error: '缺少 slug' })
 
     const track = req.query.track === '0' ? false : true
-    const manageToken = typeof req.query.manageToken === 'string' ? req.query.manageToken : undefined
     const rawItem = await store.getBySlug(slug, { incrementView: false })
     if (!rawItem) {
       return res.status(404).json({ success: false, error: '分享不存在或已下架' })
     }
 
-    const canManage = manageToken ? await store.validateManageToken(slug, manageToken) : false
-
-    if (rawItem.status !== 'active' && !canManage) {
+    if (rawItem.status !== 'active') {
       return res.status(404).json({ success: false, error: '分享不存在或已下架' })
     }
 
@@ -207,79 +165,11 @@ router.get('/maps/:slug', async (req, res, next) => {
     res.json({
       success: true,
       data: {
-        ...toPublicItem(req, item, canManage),
+        ...toPublicItem(req, item),
         shareUrl: buildAbsoluteUrl(req, `/share/${item.slug}`),
       },
     })
   } catch (err) {
-    next(err)
-  }
-})
-
-// PATCH /api/share/maps/:slug — 修改分享（需管理口令）
-router.patch('/maps/:slug', async (req, res, next) => {
-  try {
-    await storeReady
-    const slug = String(req.params.slug || '').trim()
-    if (!slug) return res.status(400).json({ success: false, error: '缺少 slug' })
-
-    const manageToken = typeof req.body?.manageToken === 'string' ? req.body.manageToken.trim() : ''
-    if (!manageToken) return res.status(400).json({ success: false, error: '缺少管理口令' })
-
-    const patch = {
-      title: typeof req.body?.title === 'string' ? req.body.title : undefined,
-      description: typeof req.body?.description === 'string' ? req.body.description : undefined,
-      visibility: parseVisibility(req.body?.visibility),
-    }
-
-    const updated = await store.updateShare(slug, manageToken, patch)
-
-    res.json({
-      success: true,
-      data: {
-        ...toPublicItem(req, updated, true),
-        shareUrl: buildAbsoluteUrl(req, `/share/${updated.slug}`),
-      },
-    })
-  } catch (err: any) {
-    const message = err?.message || '更新失败'
-    if (message.includes('无效') || message.includes('缺少')) {
-      return res.status(401).json({ success: false, error: message })
-    }
-    if (message.includes('不存在') || message.includes('下架')) {
-      return res.status(404).json({ success: false, error: message })
-    }
-    next(err)
-  }
-})
-
-// DELETE /api/share/maps/:slug — 下架分享（需管理口令）
-router.delete('/maps/:slug', async (req, res, next) => {
-  try {
-    await storeReady
-    const slug = String(req.params.slug || '').trim()
-    if (!slug) return res.status(400).json({ success: false, error: '缺少 slug' })
-
-    const manageToken = typeof req.body?.manageToken === 'string' ? req.body.manageToken.trim() : ''
-    if (!manageToken) return res.status(400).json({ success: false, error: '缺少管理口令' })
-
-    const removed = await store.removeShare(slug, manageToken)
-
-    res.json({
-      success: true,
-      data: {
-        ...toPublicItem(req, removed, true),
-        shareUrl: buildAbsoluteUrl(req, `/share/${removed.slug}`),
-      },
-    })
-  } catch (err: any) {
-    const message = err?.message || '下架失败'
-    if (message.includes('无效') || message.includes('缺少')) {
-      return res.status(401).json({ success: false, error: message })
-    }
-    if (message.includes('不存在')) {
-      return res.status(404).json({ success: false, error: message })
-    }
     next(err)
   }
 })
@@ -290,7 +180,9 @@ router.get('/public', async (req, res, next) => {
     await storeReady
     const page = Number(req.query.page || 1)
     const pageSize = Number(req.query.pageSize || 24)
-    const result = await store.listPublic({ page, pageSize })
+    const q = typeof req.query.q === 'string' ? req.query.q : ''
+    const sort = req.query.sort === 'viewCount' ? 'viewCount' : 'createdAt'
+    const result = await store.listPublic({ page, pageSize, q, sort })
 
     res.json({
       success: true,
@@ -298,7 +190,7 @@ router.get('/public', async (req, res, next) => {
         total: result.total,
         page: result.page,
         pageSize: result.pageSize,
-        items: result.items.map((item) => toPublicItem(req, item, false)),
+        items: result.items.map((item) => toPublicItem(req, item)),
       },
     })
   } catch (err) {

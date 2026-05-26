@@ -23,7 +23,7 @@
 ## 官方端点
 
 - 搜索端点：`http://api.tianditu.gov.cn/v2/search`
-- 默认 key：`4043dde46add842282bacc412299311d`
+- 默认 key：`${TIANDITU_TOKEN}`
 
 ## 当前项目代理推荐写法
 
@@ -50,7 +50,7 @@ GET /api/tianditu/search?keyWord=商厦&queryType=12&specify=156110108&start=0&c
 最小模板：
 
 ```bash
-curl -s "http://api.tianditu.gov.cn/v2/search?postStr={\"keyWord\":\"公园\",\"queryType\":12,\"specify\":\"156110105\",\"start\":0,\"count\":10}&type=query&tk=4043dde46add842282bacc412299311d"
+curl -s "http://api.tianditu.gov.cn/v2/search?postStr={\"keyWord\":\"公园\",\"queryType\":12,\"specify\":\"156110105\",\"start\":0,\"count\":10}&type=query&tk=${TIANDITU_TOKEN}"
 ```
 
 ### 2. 视野内搜索
@@ -65,7 +65,7 @@ curl -s "http://api.tianditu.gov.cn/v2/search?postStr={\"keyWord\":\"公园\",\"
 最小模板：
 
 ```bash
-curl -s "http://api.tianditu.gov.cn/v2/search?postStr={\"keyWord\":\"医院\",\"level\":12,\"mapBound\":\"116.02524,39.83833,116.65592,39.99185\",\"queryType\":2,\"start\":0,\"count\":10}&type=query&tk=4043dde46add842282bacc412299311d"
+curl -s "http://api.tianditu.gov.cn/v2/search?postStr={\"keyWord\":\"医院\",\"level\":12,\"mapBound\":\"116.02524,39.83833,116.65592,39.99185\",\"queryType\":2,\"start\":0,\"count\":10}&type=query&tk=${TIANDITU_TOKEN}"
 ```
 
 ### 3. 多边形搜索
@@ -79,7 +79,7 @@ curl -s "http://api.tianditu.gov.cn/v2/search?postStr={\"keyWord\":\"医院\",\"
 最小模板：
 
 ```bash
-curl -s "http://api.tianditu.gov.cn/v2/search?postStr={\"keyWord\":\"学校\",\"polygon\":\"118.93232636500011,27.423305726000024,118.93146426300007,27.30976105800005,118.80356153600007,27.311829507000027,118.80469010700006,27.311829508000073,118.8046900920001,27.32381604300008,118.77984777400002,27.32381601800006,118.77984779100007,27.312213007000025,118.76792266100006,27.31240586100006,118.76680145600005,27.429347074000077,118.93232636500011,27.423305726000024\",\"queryType\":10,\"start\":0,\"count\":10}&type=query&tk=4043dde46add842282bacc412299311d"
+curl -s "http://api.tianditu.gov.cn/v2/search?postStr={\"keyWord\":\"学校\",\"polygon\":\"118.93232636500011,27.423305726000024,118.93146426300007,27.30976105800005,118.80356153600007,27.311829507000027,118.80469010700006,27.311829508000073,118.8046900920001,27.32381604300008,118.77984777400002,27.32381601800006,118.77984779100007,27.312213007000025,118.76792266100006,27.31240586100006,118.76680145600005,27.429347074000077,118.93232636500011,27.423305726000024\",\"queryType\":10,\"start\":0,\"count\":10}&type=query&tk=${TIANDITU_TOKEN}"
 ```
 
 ## 参数提取规则
@@ -159,7 +159,7 @@ curl -s "http://api.tianditu.gov.cn/v2/search?postStr={\"keyWord\":\"学校\",\"
 
 - 端点：/v2/search
 - 模式：queryType=2 / 10 / 12
-- 默认 key：4043dde46add842282bacc412299311d
+- 默认 key：${TIANDITU_TOKEN}
 
 关键结果优先查看：
 - resultType

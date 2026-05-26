@@ -17,11 +17,12 @@ import MediaFrame from '../../components/MediaFrame.astro'
 
 <MediaFrame
   kind="image"
-  title="系统整体流程总览图"
-  note="这里建议放一张总览图，把需求输入、页面生成、预览、修复、分享、管理放在一条闭环里。"
+  src="/ai/dev/docs/images/ai/dev/docs/user-doc-03-generation-loop.png"
+  title="图3：工作区中的生成闭环"
+  note="工作区把需求输入、生成过程、地图预览和继续修改放在同一个界面里。用户先配置自己的天地图 tk，再开始生成和预览地图应用。"
   bullets={[
-    '适合作为甲方培训第一页。',
-    '也适合拿来解释系统和普通地图工具的区别。',
+    '左侧沉淀需求、执行过程、错误提示和继续追问。',
+    '右侧用于实时预览地图页面，并在后续进入视觉巡检和分享流程。',
   ]}
 />
 
@@ -76,6 +77,7 @@ import MediaFrame from '../../components/MediaFrame.astro'
 1. 一个可运行、可继续修改的地图页面。
 2. 一条可用于内部审阅或对外展示的分享链接。
 3. 一份可回看生成、修复和巡检过程的运行记录。
+4. 一套不依赖平台默认 tk 的使用方式，便于项目按自己的天地图账号管理额度和权限。
 
 ## 典型的使用节奏
 

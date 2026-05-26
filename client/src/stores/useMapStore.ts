@@ -1,5 +1,7 @@
 import { create } from 'zustand'
 import type { CodeDiffPayload } from '../types/codeDiff'
+import { withBasePath } from '../utils/basePath'
+import { encodeTextBase64 } from '../utils/transportEncoding'
 
 interface MapStore {
   currentRunId: string | null
@@ -157,12 +159,12 @@ export const useMapStore = create<MapStore>((set, get) => ({
     console.log(`[AutoFix] 第 ${fixRetryCount + 1} 次修复尝试:`, execError)
 
     try {
-      const res = await fetch('/api/chat/fix', {
+      const res = await fetch(withBasePath('/api/chat/fix'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          code: currentCode,
-          error: execError,
+          codePayload: encodeTextBase64(currentCode),
+          errorPayload: encodeTextBase64(execError),
           userInput: userInput || '',
         }),
       })

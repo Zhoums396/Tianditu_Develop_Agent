@@ -8,6 +8,7 @@ import { useChatStore } from '../../stores/useChatStore'
 import { ThoughtChain } from './ThoughtChain'
 import { JsonPreviewModal } from '../common/JsonPreviewModal'
 import { isJsonPreviewableFileName } from '../../utils/jsonPreview'
+import { withBasePath } from '../../utils/basePath'
 
 function CodeBlock({ language, children }: { language: string; children: string }) {
   const [copied, setCopied] = useState(false)
@@ -19,12 +20,12 @@ function CodeBlock({ language, children }: { language: string; children: string 
   }
 
   return (
-    <div className="relative group my-2.5 rounded-xl overflow-hidden text-[13px] shadow-sm soft-surface">
+    <div className="relative group my-2.5 rounded-xl overflow-hidden text-[13px] shadow-sm">
       <div className="flex items-center justify-between bg-[#21252b] px-3.5 py-1.5 text-[11px] text-gray-500">
         <span className="font-mono">{language || 'code'}</span>
         <button
           onClick={handleCopy}
-          className="opacity-0 group-hover:opacity-100 soft-pop text-gray-500 hover:text-gray-300"
+          className="opacity-0 transition-colors group-hover:opacity-100 text-gray-500 hover:text-gray-300"
         >
           {copied ? (
             <span className="flex items-center gap-1 text-green-400">
@@ -144,7 +145,7 @@ export function ChatMessage({ msg }: { msg: Message }) {
         <button
           type="button"
           onClick={() => setPreviewOpen(true)}
-          className="mb-2 flex w-full max-w-full items-center gap-3 rounded-2xl border border-white/14 bg-white/12 px-3 py-2 text-[11px] text-blue-50 backdrop-blur-md transition hover:bg-white/15 hover:text-white soft-pop"
+          className="mb-2 flex w-full max-w-full items-center gap-3 rounded-2xl border border-white/14 bg-white/12 px-3 py-2 text-[11px] text-blue-50 backdrop-blur-md transition-colors hover:bg-white/15 hover:text-white"
           title="点击预览 JSON 文件"
         >
           <div className="min-w-0 flex flex-1 items-center gap-2">
@@ -165,7 +166,7 @@ export function ChatMessage({ msg }: { msg: Message }) {
       <button
         type="button"
         onClick={() => setPreviewOpen(true)}
-        className="mb-2 inline-flex max-w-full items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-medium text-slate-700 transition hover:bg-slate-100 soft-pop"
+        className="mb-2 inline-flex max-w-full items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-medium text-slate-700 transition-colors hover:bg-slate-100"
         title="点击预览 JSON 文件"
       >
         <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -183,7 +184,7 @@ export function ChatMessage({ msg }: { msg: Message }) {
     return (
       <>
         <div className="flex justify-end mb-3 animate-msg-in">
-          <div className="max-w-[85%] bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-2xl rounded-tr-md px-4 py-2.5 shadow-sm shadow-blue-500/10 soft-surface">
+          <div className="max-w-[85%] bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-2xl rounded-tr-md px-4 py-2.5 shadow-sm shadow-blue-500/10">
             {renderFileBadge('user')}
             <p className="text-[13.5px] leading-relaxed m-0">{msg.content}</p>
           </div>
@@ -204,10 +205,8 @@ export function ChatMessage({ msg }: { msg: Message }) {
     <>
       <div className="flex items-start gap-2.5 mb-4 animate-msg-in">
         {/* 助手头像 */}
-        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shrink-0 mt-0.5 shadow-sm shadow-blue-500/15 soft-surface">
-          <svg className="w-3.5 h-3.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.893 13.393l-1.135-1.135a2.252 2.252 0 01-.421-.585l-1.08-2.16a.414.414 0 00-.663-.107.827.827 0 01-.812.21l-1.273-.363a.89.89 0 00-.738 1.595l.587.39c.59.395.674 1.23.172 1.732l-.2.2c-.212.212-.33.498-.33.796v.41c0 .409-.11.809-.32 1.158l-1.315 2.191a2.11 2.11 0 01-1.81 1.025 1.055 1.055 0 01-1.055-1.055v-1.172c0-.92-.56-1.747-1.414-2.089l-.655-.261a2.25 2.25 0 01-1.383-2.46l.007-.042a2.25 2.25 0 01.29-.787l.09-.15a2.25 2.25 0 012.37-1.048l1.178.236a1.125 1.125 0 001.302-.795l.208-.73a1.125 1.125 0 00-.578-1.315l-.665-.332-.091.091a2.25 2.25 0 01-1.591.659h-.18c-.249 0-.487.1-.662.274a.931.931 0 01-1.458-1.137l1.411-2.353a2.25 2.25 0 00.286-.76m11.928 9.869A9 9 0 008.965 3.525m11.928 9.868A9 9 0 118.965 3.525" />
-          </svg>
+        <div className="w-7 h-7 rounded-full border border-slate-200 bg-white flex items-center justify-center shrink-0 mt-0.5 shadow-sm shadow-slate-900/10">
+          <img src={withBasePath('/assets/assistant-avatar.png')} alt="" className="h-5 w-5" />
         </div>
 
         {/* 消息内容 */}

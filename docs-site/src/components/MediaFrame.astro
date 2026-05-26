@@ -3,21 +3,32 @@ interface Props {
   kind: 'image' | 'video'
   title: string
   note: string
+  src?: string
+  alt?: string
   duration?: string
   bullets?: string[]
 }
 
-const { kind, title, note, duration, bullets = [] } = Astro.props
-const badge = kind === 'video' ? '视频占位' : '图片占位'
+const { kind, title, note, src, alt = title, duration, bullets = [] } = Astro.props
+const badge = src ? (kind === 'video' ? '演示视频' : '界面截图') : kind === 'video' ? '视频占位' : '图片占位'
+const showHead = !src || duration
 ---
 
 <section class="media-frame" data-kind={kind}>
-  <div class="media-head">
-    <div class="media-badge">{badge}</div>
+  {showHead && <div class="media-head">
+    {!src && <div class="media-badge">{badge}</div>}
     {duration && <div class="media-duration">{duration}</div>}
-  </div>
+  </div>}
   <div class="media-preview">
-    <div class="media-icon">{kind === 'video' ? '▶' : '▣'}</div>
+    {src ? (
+      kind === 'video' ? (
+        <video src={src} controls preload="metadata" aria-label={alt}></video>
+      ) : (
+        <img src={src} alt={alt} loading="lazy" />
+      )
+    ) : (
+      <div class="media-icon">{kind === 'video' ? '▶' : '▣'}</div>
+    )}
   </div>
   <h3>{title}</h3>
   <p>{note}</p>
@@ -59,12 +70,23 @@ const badge = kind === 'video' ? '视频占位' : '图片占位'
     display: grid;
     place-items: center;
     margin-top: 0.9rem;
-    min-height: 14rem;
+    min-height: 12rem;
     border-radius: 0.85rem;
-    border: 1px dashed #cbd5e1;
+    border: 1px solid #dbe3ef;
+    overflow: hidden;
     background:
       radial-gradient(circle at top left, rgba(37, 99, 235, 0.08), transparent 30%),
       linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
+  }
+
+  .media-preview img,
+  .media-preview video {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: 34rem;
+    object-fit: contain;
+    background: #f8fafc;
   }
 
   .media-icon {

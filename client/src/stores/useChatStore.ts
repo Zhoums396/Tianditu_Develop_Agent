@@ -7,6 +7,8 @@ import { createId } from '../utils/createId'
 import { extractFirstCompleteHtmlDocument } from '../utils/extractFirstCompleteHtmlDocument'
 import { injectTiandituTokenPlaceholders } from '../utils/injectTiandituTokenPlaceholders'
 import { isJsonPreviewableFileName } from '../utils/jsonPreview'
+import { withBasePath } from '../utils/basePath'
+import { encodeTextBase64 } from '../utils/transportEncoding'
 
 interface ChatStore {
   messages: Message[]
@@ -403,14 +405,14 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       const formData = new FormData()
       formData.append('message', content)
       if (file) formData.append('file', file)
-      if (existingCode) formData.append('existingCode', existingCode)
-      if (history) formData.append('conversationHistory', history)
+      if (existingCode) formData.append('existingCodePayload', encodeTextBase64(existingCode))
+      if (history) formData.append('conversationHistoryPayload', encodeTextBase64(history))
       if (sampleId) {
         formData.append('sampleId', sampleId)
       } else if (!file && activeFileContext) {
         formData.append('fileContext', activeFileContext)
       }
-      const response = await fetch('/api/chat/stream', {
+      const response = await fetch(withBasePath('/api/chat/stream'), {
         method: 'POST',
         body: formData,
       })
@@ -502,7 +504,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       assistantCreated = true
       const prefix = [
         source === 'visual'
-          ? `检测到视觉巡检异常，正在自动修复（第 ${attempt}/${maxRetries} 次）。`
+          ? `检测到视觉检查异常，正在自动修复（第 ${attempt}/${maxRetries} 次）。`
           : `检测到地图运行错误，正在自动修复（第 ${attempt}/${maxRetries} 次）。`,
         '',
         '错误信息：',
@@ -598,13 +600,13 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       : null
 
     try {
-      const response = await fetch('/api/chat/fix/stream', {
+      const response = await fetch(withBasePath('/api/chat/fix/stream'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         signal: controller?.signal,
         body: JSON.stringify({
-          code: currentCode,
-          error: effectiveError,
+          codePayload: encodeTextBase64(currentCode),
+          errorPayload: encodeTextBase64(effectiveError),
           userInput: options?.userInputHint || '',
           fileContext: get().activeFileContext || undefined,
           parentRunId,

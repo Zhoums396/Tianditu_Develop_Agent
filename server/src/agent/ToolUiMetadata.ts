@@ -248,10 +248,10 @@ export function buildToolUiMetadata(params: {
       }
     case 'visual_inspector.diagnose':
       return {
-        uiLabel: '视觉巡检',
+        uiLabel: '视觉检查',
         uiSummary: status === 'running'
           ? '正在分析地图截图'
-          : clampText(resultRecord?.summary ?? resultRecord?.diagnosis, 72) || '视觉巡检已完成',
+          : clampText(resultRecord?.summary ?? resultRecord?.diagnosis, 72) || '视觉检查已完成',
         uiVisibility: 'activity',
       }
     default:

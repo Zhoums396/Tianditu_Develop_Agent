@@ -2,6 +2,39 @@
   "version": 1,
   "items": [
     {
+      "id": "2163b095-99f9-4c6f-9149-be4d7e18098a",
+      "slug": "mpfgydpo-049b8d378e",
+      "title": "多标注点地图：北京上海广州成都西安城市信息一览",
+      "description": "地图展示北京、上海、广州、成都、西安五座城市标注点，点击可查看城市名称、简介及坐标信息，适合快速了解中国主要城市地理与特色。",
+      "visibility": "public",
+      "status": "active",
+      "htmlRelativePath": "mpfgydpo-049b8d378e/index.html",
+      "thumbnailRelativePath": "mpfgydpo-049b8d378e/thumbnail.png",
+      "assetFiles": [],
+      "viewCount": 0,
+      "createdAt": 1779366639084,
+      "updatedAt": 1779366639084,
+      "manageTokenHash": "1181ef702affde094d700c7375907787af1a62ada630d3f32793e63556712daa",
+      "codeSizeBytes": 3792
+    },
+    {
+      "id": "34633ece-881d-416d-834c-ec1b43841baa",
+      "slug": "mpdh2bsq-bf41d55a9d",
+      "title": "北京市中心地图",
+      "description": "展示以天安门广场为中心（116.40°E, 39.90°N）的北京市中心区域地图，支持缩放、旋转、全屏查看及比例尺导航，清晰呈现街道、地标与城市布局。",
+      "visibility": "public",
+      "status": "active",
+      "htmlRelativePath": "mpdh2bsq-bf41d55a9d/index.html",
+      "thumbnailRelativePath": "mpdh2bsq-bf41d55a9d/thumbnail.png",
+      "assetFiles": [],
+      "viewCount": 8,
+      "createdAt": 1779245890874,
+      "updatedAt": 1779245890874,
+      "manageTokenHash": "c681f680ef5edc990168ca1312f3d0f29fcac576fdf74bc59c560c2c273ea221",
+      "codeSizeBytes": 1425,
+      "lastViewedAt": 1779365277259
+    },
+    {
       "id": "f6580367-9977-4e10-acb0-029601d8d84d",
       "slug": "mmvoupfo-f408aa0565",
       "title": "江苏省乡村地点地理编码展示",
@@ -11,12 +44,12 @@
       "htmlRelativePath": "mmvoupfo-f408aa0565/index.html",
       "thumbnailRelativePath": "mmvoupfo-f408aa0565/thumbnail.png",
       "assetFiles": [],
-      "viewCount": 6,
+      "viewCount": 16,
       "createdAt": 1773817016388,
       "updatedAt": 1773817016388,
       "manageTokenHash": "92cc879e54a8aee3ece5dfc7c88b476951b1c27198b6e527f3fee2cd93bc19f1",
       "codeSizeBytes": 22467,
-      "lastViewedAt": 1774076917245
+      "lastViewedAt": 1779366189933
     },
     {
       "id": "f62bfa75-b8a9-4525-a641-b8b899b4e620",
@@ -30,12 +63,12 @@
       "assetFiles": [
         "assets/asset-1.geojson"
       ],
-      "viewCount": 29,
+      "viewCount": 35,
       "createdAt": 1772760435990,
       "updatedAt": 1772760435990,
       "manageTokenHash": "86162f6a59484a8d01dfed7b119b9b415e1a37e23489d7411cabc6bee12829bf",
       "codeSizeBytes": 25688,
-      "lastViewedAt": 1774075535766
+      "lastViewedAt": 1779364760112
     },
     {
       "id": "f9c280ca-eea7-44c0-9837-ccd3b91cf804",
@@ -68,12 +101,12 @@
       "assetFiles": [
         "assets/asset-1.geojson"
       ],
-      "viewCount": 12,
+      "viewCount": 14,
       "createdAt": 1772725842821,
       "updatedAt": 1772725842821,
       "manageTokenHash": "ce5c22738944f252506968a534c2a6d7f66af1e10e71c05ef9beec5fe05941a9",
       "codeSizeBytes": 18967,
-      "lastViewedAt": 1772759870904
+      "lastViewedAt": 1779362831807
     },
     {
       "id": "c53dbda2-8083-4853-8cf7-73a262550302",
@@ -85,12 +118,12 @@
       "htmlRelativePath": "mmd8jiqr-fa4b61201f/index.html",
       "thumbnailRelativePath": "mmd8jiqr-fa4b61201f/thumbnail.png",
       "assetFiles": [],
-      "viewCount": 4,
+      "viewCount": 6,
       "createdAt": 1772701229475,
       "updatedAt": 1772701229475,
       "manageTokenHash": "dd689174db4a6e520236b987fed47f64f89270dc8bf979ddc5dda074df0f8f0b",
       "codeSizeBytes": 10894,
-      "lastViewedAt": 1772701252202
+      "lastViewedAt": 1779364776480
     },
     {
       "id": "d25d609d-9556-43b5-b898-82f033eb13ea",
@@ -174,12 +207,12 @@
       "htmlRelativePath": "mmd14ur2-f509b0c2ac/index.html",
       "thumbnailRelativePath": "mmd14ur2-f509b0c2ac/thumbnail.png",
       "assetFiles": [],
-      "viewCount": 16,
+      "viewCount": 18,
       "createdAt": 1772688787886,
       "updatedAt": 1772688787886,
       "manageTokenHash": "7a5b1bcf80b9c28281a547304c8513d4c59347040ece283dbc77551c61be7a71",
       "codeSizeBytes": 15032,
-      "lastViewedAt": 1772696628869
+      "lastViewedAt": 1779363475499
     },
     {
       "id": "7d97409a-4236-4387-bad2-3a6096848d4c",
@@ -191,12 +224,12 @@
       "htmlRelativePath": "mmd0zf5t-1b93e3c79d/index.html",
       "thumbnailRelativePath": "mmd0zf5t-1b93e3c79d/thumbnail.png",
       "assetFiles": [],
-      "viewCount": 42,
+      "viewCount": 44,
       "createdAt": 1772688534401,
       "updatedAt": 1772688534401,
       "manageTokenHash": "6ebeda2cb8269125855e5dbf5b5824840c1293735553eafbec215e7b4d7b8f6b",
       "codeSizeBytes": 19901,
-      "lastViewedAt": 1772701493863
+      "lastViewedAt": 1779261041541
     },
     {
       "id": "7299cbe2-73e1-4bec-b83e-098de9bf9c6a",

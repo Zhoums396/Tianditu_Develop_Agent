@@ -10,29 +10,36 @@ import MediaFrame from '../../components/MediaFrame.astro'
 这套文档面向第一次接触系统的业务同学、要做正式交付的项目成员，以及后续需要培训和复盘的维护人员。它不会只讲功能清单，而是按真实使用流程去讲“先看什么、先做什么、什么时候发布”。
 
 <Aside type="tip" title="推荐阅读顺序">
-先读 [系统整体介绍](/docs/system-overview/) 和 [典型使用情景](/docs/scenarios/)，再进入 [5 分钟快速上手](/docs/quickstart/)。如果已经明确自己要做哪类页面，可以直接跳到 [故事地图路线](/docs/story-builder/) 或 [数据驱动路线](/docs/data-builder/)。
+先读 [系统整体介绍](/ai/dev/docs/system-overview/) 和 [典型使用情景](/ai/dev/docs/scenarios/)，再进入 [5 分钟快速上手](/ai/dev/docs/quickstart/)。如果已经明确自己要做哪类页面，可以直接跳到 [故事地图路线](/ai/dev/docs/story-builder/) 或 [数据驱动路线](/ai/dev/docs/data-builder/)。
 </Aside>
 
 ## 你可以从这里开始
 
+<MediaFrame
+  kind="image"
+  src="/ai/dev/docs/images/ai/dev/docs/user-doc-01-start-here.png"
+  title="图1：你可以从这里开始"
+  note="首页会展示可直接运行的案例场景。第一次使用时，可以从“开始使用”进入空白工作区，也可以点击某个案例直接带着示例需求进入工作区。"
+/>
+
 <CardGrid>
-  <LinkCard title="第一次使用系统" href="/docs/quickstart/" description="先跑通一次从生成、预览到分享的闭环。" />
-  <LinkCard title="我要做故事地图" href="/docs/story-builder/" description="适合没有现成数据，重点在主题表达、叙事与视觉呈现。" />
-  <LinkCard title="我要做数据驱动应用" href="/docs/data-builder/" description="适合已有 GeoJSON / JSON / Excel，或需要把业务数据上图。" />
-  <LinkCard title="我想先看系统全貌" href="/docs/system-overview/" description="先理解系统闭环、能力边界和适合谁使用。" />
+  <LinkCard title="第一次使用系统" href="/ai/dev/docs/quickstart/" description="先跑通一次从生成、预览到分享的闭环。" />
+  <LinkCard title="我要做故事地图" href="/ai/dev/docs/story-builder/" description="适合没有现成数据，重点在主题表达、叙事与视觉呈现。" />
+  <LinkCard title="我要做数据驱动应用" href="/ai/dev/docs/data-builder/" description="适合已有 GeoJSON / JSON / Excel，或需要把业务数据上图。" />
+  <LinkCard title="我想先看系统全貌" href="/ai/dev/docs/system-overview/" description="先理解系统闭环、能力边界和适合谁使用。" />
 </CardGrid>
 
 ## 按你的起点选阅读路径
 
 <Tabs>
   <TabItem label="没有现成数据">
-    如果你更关心主题表达、汇报展示和故事脉络，先看 [故事地图路线](/docs/story-builder/)。第一次生成时先要求页面结构和叙事节奏，再逐步补风格、章节和地图联动。
+    如果你更关心主题表达、汇报展示和故事脉络，先看 [故事地图路线](/ai/dev/docs/story-builder/)。第一次生成时先要求页面结构和叙事节奏，再逐步补风格、章节和地图联动。
   </TabItem>
   <TabItem label="已有 GeoJSON / JSON / Excel">
-    如果你已经有结构化数据，先看 [数据驱动路线](/docs/data-builder/)。重点不是“一次做全”，而是先保证最小可用数据被正确读取，再继续增强筛选、图例和统计模块。
+    如果你已经有结构化数据，先看 [数据驱动路线](/ai/dev/docs/data-builder/)。重点不是“一次做全”，而是先保证最小可用数据被正确读取，再继续增强筛选、图例和统计模块。
   </TabItem>
   <TabItem label="已有第一版结果">
-    如果你已经得到初版页面，直接进入 [修改迭代与质量保障](/docs/quality/) 和 [分享、公开与管理](/docs/publish/)。这一段更适合收口、审阅和正式交付。
+    如果你已经得到初版页面，直接进入 [修改迭代与质量保障](/ai/dev/docs/quality/) 和 [分享、公开与管理](/ai/dev/docs/publish/)。这一段更适合收口、审阅和正式交付。
   </TabItem>
 </Tabs>
 
@@ -82,25 +89,15 @@ import MediaFrame from '../../components/MediaFrame.astro'
   ]}
 />
 
-## 素材位与培训素材
+## 培训素材
 
 <MediaFrame
   kind="image"
-  title="工作区界面截图"
-  note="建议替换为真实工作区截图，让首次阅读者快速理解聊天区、地图预览区和代码区分别做什么。"
+  src="/ai/dev/docs/images/ai/dev/docs/user-doc-02-workspace-first.png"
+  title="图2：工作区首次进入状态"
+  note="工作区左侧承载需求输入和生成过程，右侧承载地图预览。没有配置天地图 tk 时，系统会在输入区提示先完成 tk 配置。"
   bullets={[
-    '截图中建议保留一次真实生成过程。',
-    '最好同时标出聊天、地图、代码三个区域。',
-  ]}
-/>
-
-<MediaFrame
-  kind="video"
-  title="一分钟快速上手视频"
-  duration="60-90 秒"
-  note="建议录一个最短路径的演示视频：输入一句需求、拿到第一版、继续修改、生成分享链接。"
-  bullets={[
-    '适合给甲方做演示或培训开场。',
-    '视频内容尽量只保留一条最短主线。',
+    '先配置 tk，再开始生成或运行案例。',
+    '生成结果稳定后，再继续做修改、巡检和分享。',
   ]}
 />

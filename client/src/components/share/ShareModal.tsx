@@ -59,6 +59,17 @@ function buildSuggestionPrompt(messages: Message[]): string {
   return Array.from(new Set(picked)).join('\n')
 }
 
+function buildFallbackSuggestion(code: string, prompt?: string) {
+  const titleMatch = code.match(/<title[^>]*>([^<]+)<\/title>/i)
+  const h1Match = code.match(/<h1[^>]*>([^<]+)<\/h1>/i)
+  const rawTitle = (titleMatch?.[1] || h1Match?.[1] || '地图快照').replace(/\s+/g, ' ').trim()
+  const rawDescription = (prompt || '基于当前地图页面生成的可分享快照。').replace(/\s+/g, ' ').trim()
+  return {
+    title: rawTitle.slice(0, 80) || '地图快照',
+    description: rawDescription.slice(0, 180) || '基于当前地图页面生成的可分享快照。',
+  }
+}
+
 export function ShareModal({ open, code, onClose }: ShareModalProps) {
   const messages = useChatStore((s) => s.messages)
   const shareThumbnailBase64 = useMapStore((s) => s.shareThumbnailBase64)
@@ -192,32 +203,37 @@ export function ShareModal({ open, code, onClose }: ShareModalProps) {
     }
 
     try {
-      await shareApi.suggestStream({
+      const suggestion = await shareApi.suggest({
         code,
         hint: suggestionPrompt || undefined,
         prompt: suggestionPrompt || undefined,
       }, {
         signal: controller.signal,
-        onDelta: (event) => {
-          if (suggestRunIdRef.current !== runId) return
-          if (origin === 'manual') {
-            setTitle(event.title || '')
-            setDescription(event.description || '')
-            return
-          }
-          if (!titleEditedRef.current && event.title) {
-            setTitle(event.title)
-          }
-          if (!descriptionEditedRef.current && event.description) {
-            setDescription(event.description)
-          }
-        },
       })
+      if (suggestRunIdRef.current !== runId) return
+      if (origin === 'manual') {
+        setTitle(suggestion.title || '')
+        setDescription(suggestion.description || '')
+        return
+      }
+      if (!titleEditedRef.current && suggestion.title) {
+        setTitle(suggestion.title)
+      }
+      if (!descriptionEditedRef.current && suggestion.description) {
+        setDescription(suggestion.description)
+      }
     } catch (err: any) {
       if (controller.signal.aborted) return
-      setSuggestError(origin === 'auto'
-        ? (err?.message || '自动生成页面介绍失败，请手动重试')
-        : (err?.message || '灵感生成失败，请重试'))
+      const fallback = buildFallbackSuggestion(code, suggestionPrompt)
+      if (origin === 'manual' || !titleEditedRef.current) {
+        setTitle(fallback.title)
+      }
+      if (origin === 'manual' || !descriptionEditedRef.current) {
+        setDescription(fallback.description)
+      }
+      if (origin === 'manual') {
+        setSuggestError('自动生成暂不可用，已填入基础标题和描述')
+      }
     } finally {
       if (suggestRunIdRef.current === runId) {
         setSuggesting(false)
@@ -342,6 +358,11 @@ export function ShareModal({ open, code, onClose }: ShareModalProps) {
                 <div className="text-xs text-slate-500 mt-0.5">会出现在公开样例集页面</div>
               </button>
             </div>
+            {visibility === 'public' && (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs leading-5 text-amber-800">
+                公开后，该地图快照及关联数据将出现在公开样例集，任何访问者都可以查看、复制链接并下载页面资源。请确认不包含敏感或不宜公开的数据。
+              </div>
+            )}
           </div>
 
           {error && (
@@ -378,32 +399,6 @@ export function ShareModal({ open, code, onClose }: ShareModalProps) {
                   <input value={result.shareUrl} readOnly className="flex-1 rounded-lg border border-slate-200 px-2.5 py-2 text-xs bg-white" />
                   <button
                     onClick={() => withCopyHint(result.shareUrl, '已复制分享链接', '复制失败，请手动复制')}
-                    className="px-3 py-2 rounded-lg border border-slate-200 text-xs text-slate-700 hover:bg-slate-50"
-                  >
-                    复制
-                  </button>
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <div className="text-xs text-slate-500">管理链接（含管理口令）</div>
-                <div className="flex gap-2">
-                  <input value={result.manageUrl} readOnly className="flex-1 rounded-lg border border-slate-200 px-2.5 py-2 text-xs bg-white" />
-                  <button
-                    onClick={() => withCopyHint(result.manageUrl, '已复制管理链接', '复制失败，请手动复制')}
-                    className="px-3 py-2 rounded-lg border border-slate-200 text-xs text-slate-700 hover:bg-slate-50"
-                  >
-                    复制
-                  </button>
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <div className="text-xs text-slate-500">管理口令（请妥善保存，丢失无法找回）</div>
-                <div className="flex gap-2">
-                  <input value={result.manageToken} readOnly className="flex-1 rounded-lg border border-slate-200 px-2.5 py-2 text-xs bg-white" />
-                  <button
-                    onClick={() => withCopyHint(result.manageToken, '已复制管理口令', '复制失败，请手动复制')}
                     className="px-3 py-2 rounded-lg border border-slate-200 text-xs text-slate-700 hover:bg-slate-50"
                   >
                     复制

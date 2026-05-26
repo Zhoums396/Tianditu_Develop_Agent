@@ -7,6 +7,7 @@ import type {
   RunPhase,
   RunStatus,
 } from '../types/runDossier'
+import { withBasePath } from '../utils/basePath'
 
 interface RuntimeErrorPayload {
   runId: string
@@ -23,7 +24,7 @@ interface RuntimeErrorPayload {
 }
 
 async function requestJson<T>(url: string, init: RequestInit): Promise<T> {
-  const response = await fetch(url, init)
+  const response = await fetch(withBasePath(url), init)
   if (!response.ok) throw new Error(`HTTP ${response.status}`)
   const json = await response.json()
   if (!json?.success) throw new Error(json?.error || '请求失败')
@@ -76,6 +77,6 @@ export const runDossierApi = {
   },
 
   getArtifactRawUrl(runId: string, artifactId: string) {
-    return `/api/run-dossiers/${encodeURIComponent(runId)}/artifacts/${encodeURIComponent(artifactId)}/raw`
+    return withBasePath(`/api/run-dossiers/${encodeURIComponent(runId)}/artifacts/${encodeURIComponent(artifactId)}/raw`)
   },
 }

@@ -14,13 +14,11 @@ export interface ShareItem {
   codeSizeBytes: number
   htmlUrl: string
   thumbnailUrl: string
-  canManage: boolean
+  creatorName?: string
 }
 
 export interface ShareCreateResult extends ShareItem {
   shareUrl: string
-  manageUrl: string
-  manageToken: string
 }
 
 export interface ShareSuggestResult {

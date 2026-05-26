@@ -3,6 +3,7 @@ import type { PointerEvent as ReactPointerEvent } from 'react'
 import { useLocation, Link } from 'react-router-dom'
 import { getExampleByIndex, getExampleByLookupKey, getExampleBySampleId, getExamplePrompt } from '../data/exampleCards'
 import { ChatPanel } from '../components/chat/ChatPanel'
+import { ChatInput } from '../components/chat/ChatInput'
 import { MapPreview } from '../components/map/MapPreview'
 import { CodePanel } from '../components/map/CodePanel'
 import { ShareModal } from '../components/share/ShareModal'
@@ -10,12 +11,23 @@ import { useWorkspaceStore } from '../stores/useWorkspaceStore'
 import { useMapStore } from '../stores/useMapStore'
 import { useAuthStore } from '../stores/useAuthStore'
 import { useChatStore } from '../stores/useChatStore'
+import { useTiandituTokenStore } from '../stores/useTiandituTokenStore'
 import { docsUrl } from '../utils/docsUrl'
+import { appAsset, withBasePath } from '../utils/basePath'
+import { UserMenu } from '../components/auth/UserMenu'
 
 export function WorkspacePage() {
   const { showCode, chatWidth, codeWidth, toggleCode, setChatWidth, setCodeWidth } = useWorkspaceStore()
-  const { currentCode, codeStreaming } = useMapStore()
-  const { sendMessage } = useChatStore()
+  const {
+    currentCode,
+    codeStreaming,
+    visualChecking,
+    visualCheckingOwner,
+    fixing,
+    fixingSource,
+  } = useMapStore()
+  const { messages, loading, sendMessage } = useChatStore()
+  const { hasToken, status: tokenStatus, refresh: refreshToken, openModal: openTokenModal } = useTiandituTokenStore()
   const location = useLocation()
   const { session, status, refresh, openLogout } = useAuthStore()
   const [shareOpen, setShareOpen] = useState(false)
@@ -29,6 +41,15 @@ export function WorkspacePage() {
   const dragCleanupRef = useRef<(() => void) | null>(null)
   const hasCodePanel = showCode && !!(currentCode || codeStreaming)
   const contentOnlyMode = mapPageFilled
+  const showChatSidebar = messages.length > 0 || loading
+  const floatingInputLocked = !hasToken || visualChecking || (fixing && fixingSource === 'visual')
+  const floatingInputLockReason = !hasToken
+    ? '请先在右上角用户菜单中输入并校验天地图 tk'
+    : (fixing && fixingSource === 'visual') || visualCheckingOwner === 'repair'
+    ? 'AI 正在处理视觉补修，请稍候后再发送消息'
+    : (visualChecking
+        ? 'AI 正在进行视觉检查，请稍候后再发送消息'
+        : null)
 
   const layoutConstraints = useMemo(() => ({
     minChatWidth: 320,
@@ -175,6 +196,10 @@ export function WorkspacePage() {
     window.addEventListener('pointercancel', stopResize)
   }
 
+  const handleFloatingSend = (content: string, file?: File, filePreviewText?: string | null) => {
+    void sendMessage(content, file, undefined, undefined, filePreviewText)
+  }
+
   // 从首页案例卡片跳转时自动发送 prompt
   const sentRef = useRef(false)
   useEffect(() => {
@@ -182,6 +207,12 @@ export function WorkspacePage() {
       void refresh().catch(() => {})
     }
   }, [status, refresh])
+
+  useEffect(() => {
+    if (tokenStatus === 'idle') {
+      void refreshToken().catch(() => {})
+    }
+  }, [tokenStatus, refreshToken])
 
   useEffect(() => {
     const state = (location.state as { prompt?: string; sampleId?: string } | null) || {}
@@ -197,6 +228,12 @@ export function WorkspacePage() {
     const prompt = state.prompt || (derivedExample ? getExamplePrompt(derivedExample) : undefined)
 
     if (!prompt || sentRef.current) return
+    if (tokenStatus === 'idle' || tokenStatus === 'loading' || tokenStatus === 'saving') return
+    if (!hasToken) {
+      openTokenModal()
+      return
+    }
+
     sentRef.current = true
 
     const run = async () => {
@@ -204,7 +241,7 @@ export function WorkspacePage() {
         let sampleReady = true
         let sampleFile: { name: string; size: number } | undefined
         if (sampleId) {
-          const response = await fetch('/api/chat/sample-context', {
+          const response = await fetch(withBasePath('/api/chat/sample-context'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ sampleId }),
@@ -239,18 +276,18 @@ export function WorkspacePage() {
     }
 
     void run()
-  }, [location.search, location.state, sendMessage])
+  }, [hasToken, location.search, location.state, openTokenModal, sendMessage, tokenStatus])
 
   return (
     <div className={`h-screen flex flex-col bg-gray-50 ${contentOnlyMode ? 'overflow-hidden' : ''}`}>
       {/* ===== 顶部导航栏 ===== */}
       {!contentOnlyMode && (
-      <header className="flex items-center justify-between px-5 h-12 bg-white border-b border-gray-200/60 shrink-0">
+      <header className="flex h-16 shrink-0 items-center justify-between border-b border-gray-200/60 bg-white px-5">
         {/* 左侧：天地图 Logo + 副标题 */}
         <Link to="/" className="flex items-center gap-3 no-underline">
-          <img src="/tianditu-logo.png" alt="天地图" className="h-9 object-contain" />
+          <img src={appAsset('/tianditu-logo.png')} alt="天地图" className="h-9 object-contain" />
           <div className="w-px h-6 bg-gray-200" />
-          <img src="/tianditu-agent-logo.svg" alt="天地图开发智能体" className="h-8 sm:h-9 w-auto object-contain" />
+          <img src={appAsset('/tianditu-agent-logo.svg')} alt="天地图开发智能体" className="h-8 sm:h-9 w-auto object-contain" />
         </Link>
 
         {/* 右侧：导航链接 + 代码按钮 */}
@@ -259,19 +296,19 @@ export function WorkspacePage() {
           <nav className="flex items-center gap-0.5 mr-3">
             <Link
               to="/"
-              className="text-[12.5px] text-gray-500 hover:text-blue-600 px-2.5 py-1.5 rounded-md hover:bg-blue-50/60 soft-pop no-underline"
+              className="flex h-9 items-center px-3 text-[14px] text-gray-500 no-underline transition-colors hover:text-[#387aca]"
             >
               首页
             </Link>
             <a
               href={docsUrl}
-              className="text-[12.5px] text-gray-500 hover:text-blue-600 px-2.5 py-1.5 rounded-md hover:bg-blue-50/60 soft-pop no-underline"
+              className="flex h-9 items-center px-3 text-[14px] text-gray-500 no-underline transition-colors hover:text-[#387aca]"
             >
               使用文档
             </a>
             <Link
               to="/gallery"
-              className="text-[12.5px] text-gray-500 hover:text-blue-600 px-2.5 py-1.5 rounded-md hover:bg-blue-50/60 soft-pop no-underline"
+              className="flex h-9 items-center px-3 text-[14px] text-gray-500 no-underline transition-colors hover:text-[#387aca]"
             >
               公开样例
             </Link>
@@ -279,7 +316,7 @@ export function WorkspacePage() {
               href="https://www.tianditu.gov.cn/"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[12.5px] text-gray-500 hover:text-blue-600 px-2.5 py-1.5 rounded-md hover:bg-blue-50/60 soft-pop no-underline"
+              className="flex h-9 items-center px-3 text-[14px] text-gray-500 no-underline transition-colors hover:text-[#387aca]"
             >
               天地图官网
             </a>
@@ -287,7 +324,7 @@ export function WorkspacePage() {
               href="http://lbs.tianditu.gov.cn/api/js4.0/class.html"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[12.5px] text-gray-500 hover:text-blue-600 px-2.5 py-1.5 rounded-md hover:bg-blue-50/60 soft-pop no-underline flex items-center gap-1"
+              className="flex h-9 items-center gap-1 px-3 text-[14px] text-gray-500 no-underline transition-colors hover:text-[#387aca]"
             >
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
@@ -297,19 +334,8 @@ export function WorkspacePage() {
           </nav>
 
           {session?.enabled && session.authenticated && (
-            <div className="hidden md:flex items-center gap-2 mr-2 rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5">
-              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-[12px] font-semibold text-blue-700">
-                {(session.user?.displayName || session.user?.loginName || 'U').slice(0, 1).toUpperCase()}
-              </span>
-              <span className="max-w-28 truncate text-[12px] font-medium text-slate-600">
-                {session.user?.displayName || session.user?.loginName}
-              </span>
-              <button
-                onClick={() => openLogout('/')}
-                className="text-[12px] text-slate-400 hover:text-rose-600 transition-colors"
-              >
-                退出
-              </button>
+            <div className="mr-2">
+              <UserMenu session={session} onLogout={() => openLogout('/')} />
             </div>
           )}
 
@@ -320,7 +346,7 @@ export function WorkspacePage() {
           {currentCode && !codeStreaming && (
             <button
               onClick={() => setShareOpen(true)}
-              className="text-[12px] px-3 py-1.5 rounded-lg border border-blue-200/80 bg-blue-50 text-blue-600 hover:bg-blue-100/70 soft-pop mr-2"
+              className="h-9 rounded-[3px] border border-blue-200/80 bg-blue-50 px-4 text-[12px] text-blue-600 hover:bg-blue-100/70 soft-pop mr-2"
             >
               <span className="flex items-center gap-1.5">
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -335,7 +361,7 @@ export function WorkspacePage() {
           {(currentCode || codeStreaming) && (
             <button
               onClick={toggleCode}
-              className={`text-[12px] px-3 py-1.5 rounded-lg border soft-pop ${
+              className={`h-9 rounded-[3px] border px-4 text-[12px] soft-pop ${
                 showCode
                   ? 'bg-blue-50 border-blue-200/80 text-blue-600'
                   : 'bg-white border-gray-200/80 text-gray-400 hover:text-gray-600 hover:border-gray-300'
@@ -355,7 +381,7 @@ export function WorkspacePage() {
 
       {/* ===== 主体 ===== */}
       <div ref={layoutRef} className="flex-1 flex overflow-hidden">
-        {!contentOnlyMode && (
+        {!contentOnlyMode && showChatSidebar && (
           <>
             {/* 聊天面板 */}
             <div
@@ -380,6 +406,20 @@ export function WorkspacePage() {
             pageFilled={mapPageFilled}
             onTogglePageFill={() => setMapPageFilled((value) => !value)}
           />
+          {!contentOnlyMode && !showChatSidebar && (
+            <div className="pointer-events-none absolute inset-x-0 bottom-8 z-20 flex justify-center px-6">
+              <div className="pointer-events-auto w-full max-w-[680px]">
+                <ChatInput
+                  onSend={handleFloatingSend}
+                  loading={loading}
+                  disabled={floatingInputLocked}
+                  disabledReason={floatingInputLockReason}
+                  placeholder="开始创建您的地理底图应用"
+                  variant="floating"
+                />
+              </div>
+            </div>
+          )}
         </div>
 
         {/* 代码面板 */}

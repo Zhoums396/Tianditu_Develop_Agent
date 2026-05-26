@@ -22,7 +22,7 @@
 ## 官方端点
 
 - `http://api.tianditu.gov.cn/v2/administrative`
-- 默认 key：`4043dde46add842282bacc412299311d`
+- 默认 key：`${TIANDITU_TOKEN}`
 
 ## 必填参数
 
@@ -49,7 +49,7 @@
 ## 最小请求模板
 
 ```bash
-curl -s "http://api.tianditu.gov.cn/v2/administrative?keyword=156110000&childLevel=0&extensions=true&tk=4043dde46add842282bacc412299311d"
+curl -s "http://api.tianditu.gov.cn/v2/administrative?keyword=156110000&childLevel=0&extensions=true&tk=${TIANDITU_TOKEN}"
 ```
 
 ## 完整示例
@@ -57,19 +57,19 @@ curl -s "http://api.tianditu.gov.cn/v2/administrative?keyword=156110000&childLev
 ### 示例 1：按编码查北京边界
 
 ```bash
-curl -s "http://api.tianditu.gov.cn/v2/administrative?keyword=156110000&childLevel=0&extensions=true&tk=4043dde46add842282bacc412299311d"
+curl -s "http://api.tianditu.gov.cn/v2/administrative?keyword=156110000&childLevel=0&extensions=true&tk=${TIANDITU_TOKEN}"
 ```
 
 ### 示例 2：按名称查杭州及下一级行政区
 
 ```bash
-curl -s "http://api.tianditu.gov.cn/v2/administrative?keyword=杭州&childLevel=1&extensions=false&tk=4043dde46add842282bacc412299311d"
+curl -s "http://api.tianditu.gov.cn/v2/administrative?keyword=杭州&childLevel=1&extensions=false&tk=${TIANDITU_TOKEN}"
 ```
 
 ### 示例 3：查省市县三级下钻
 
 ```bash
-curl -s "http://api.tianditu.gov.cn/v2/administrative?keyword=河南&childLevel=3&extensions=false&tk=4043dde46add842282bacc412299311d"
+curl -s "http://api.tianditu.gov.cn/v2/administrative?keyword=河南&childLevel=3&extensions=false&tk=${TIANDITU_TOKEN}"
 ```
 
 ## 返回结构
@@ -149,7 +149,7 @@ curl -s "http://api.tianditu.gov.cn/v2/administrative?keyword=河南&childLevel=
 已按行政区划查询构造天地图请求。
 
 - 端点：/v2/administrative
-- 默认 key：4043dde46add842282bacc412299311d
+- 默认 key：${TIANDITU_TOKEN}
 - 是否返回边界：extensions=true/false
 - 下级层级：childLevel=0-3
 

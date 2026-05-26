@@ -22,7 +22,7 @@
 ## 官方端点
 
 - 搜索端点：`http://api.tianditu.gov.cn/v2/search`
-- 默认 key：`4043dde46add842282bacc412299311d`
+- 默认 key：`${TIANDITU_TOKEN}`
 
 ## 当前项目代理推荐写法
 
@@ -45,7 +45,7 @@ GET /api/tianditu/search?keyWord=学校&queryType=14&specify=156110108
 最小模板：
 
 ```bash
-curl -s "http://api.tianditu.gov.cn/v2/search?postStr={\"queryType\":13,\"start\":0,\"count\":5,\"specify\":\"156110000\",\"mapBound\":\"73,3,135,54\",\"dataTypes\":\"法院,公园\"}&type=query&tk=4043dde46add842282bacc412299311d"
+curl -s "http://api.tianditu.gov.cn/v2/search?postStr={\"queryType\":13,\"start\":0,\"count\":5,\"specify\":\"156110000\",\"mapBound\":\"73,3,135,54\",\"dataTypes\":\"法院,公园\"}&type=query&tk=${TIANDITU_TOKEN}"
 ```
 
 适合：
@@ -60,7 +60,7 @@ curl -s "http://api.tianditu.gov.cn/v2/search?postStr={\"queryType\":13,\"start\
 最小模板：
 
 ```bash
-curl -s "http://api.tianditu.gov.cn/v2/search?postStr={\"keyWord\":\"学校\",\"queryType\":14,\"specify\":\"156110108\"}&type=query&tk=4043dde46add842282bacc412299311d"
+curl -s "http://api.tianditu.gov.cn/v2/search?postStr={\"keyWord\":\"学校\",\"queryType\":14,\"specify\":\"156110108\"}&type=query&tk=${TIANDITU_TOKEN}"
 ```
 
 适合：
@@ -205,7 +205,7 @@ curl -s "http://api.tianditu.gov.cn/v2/search?postStr={\"keyWord\":\"学校\",\"
 
 - 端点：/v2/search
 - queryType：13 或 14
-- 默认 key：4043dde46add842282bacc412299311d
+- 默认 key：${TIANDITU_TOKEN}
 
 结果重点查看：
 - resultType

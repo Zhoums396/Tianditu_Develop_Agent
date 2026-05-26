@@ -30,9 +30,9 @@ const DEFAULT_MAP_HTML = `<!DOCTYPE html>
 <div id="map"></div>
 <script>
   var map = new TMapGL.Map('map', {
-    center: [116.3975, 39.9087],
-    zoom: 16.4,
-    pitch: 58,
+    center: [116.3913, 39.9066],
+    zoom: 17,
+    pitch: 60,
     bearing: 0,
     doubleClickZoom: true,
     scrollZoom: true,
